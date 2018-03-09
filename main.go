@@ -8,22 +8,14 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
-
 	"github.com/riobard/go-shadowsocks2/core"
 	"context"
 	"github.com/FTwOoO/go-shadowsocks-client/proxy_setup"
 )
 
-var config struct {
-	Verbose    bool
-	UDPTimeout time.Duration
-}
-
 func logf(f string, v ...interface{}) {
-	if config.Verbose {
-		log.Printf(f, v...)
-	}
+	log.Printf(f, v...)
+
 }
 
 func main() {
