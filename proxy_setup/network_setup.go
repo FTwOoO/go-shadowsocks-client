@@ -29,6 +29,7 @@ func resetProxySettings(proxySettings SystemProxySettings, ctx context.Context) 
 }
 
 func InitProxySettings(bypass []string, addr string, ctx context.Context)  {
+	return
 	var proxySettings SystemProxySettings
 	if runtime.GOOS == "windows" {
 		w := &windows{addr}
