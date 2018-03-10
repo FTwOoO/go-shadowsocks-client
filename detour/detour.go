@@ -133,7 +133,7 @@ func Dialer(d dialer.DialFunc) dialer.DialFunc {
 					log.Debugf("Unable to close connection: %v", err)
 				}
 			} else if detector.TamperingSuspected(err) {
-				log.Debugf("Dial %s to %s failed, try detour: %s", dc.stateDesc(), addr, err)
+				log.Debugf("Dial %s to %s failed[%s], try detour", dc.stateDesc(), addr, err)
 			} else {
 				log.Debugf("Dial %s to %s failed: %s", dc.stateDesc(), addr, err)
 				return dc, err
