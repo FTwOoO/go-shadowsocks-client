@@ -17,6 +17,7 @@ import (
 	"github.com/FTwOoO/go-shadowsocks-client/serv"
 	"time"
 	"net"
+	"github.com/FTwOoO/go-shadowsocks-client/detour"
 )
 
 func onReady() {
@@ -60,7 +61,7 @@ func main() {
 	flag.Parse()
 
 
-	ssDialer := &dialer.ShadowsocksDialer{
+	shadowsocks := &dialer.Shadowsocks{
 		Cipher: flags.Cipher,
 		Password:flags.Password,
 		ServerAddr:flags.Client,
@@ -69,8 +70,8 @@ func main() {
 
 
 	var dial dialer.DialFunc = net.Dial
-	dial = ssDialer.GenDialer(dial)
-
+	dial = shadowsocks.GenDialer(dial)
+	dial = detour.Dialer(dial)
 
 	proxy_setup.InitSocksProxySetting(flags.Socks, ctx)
 	go serv.SocksLocal(flags.Socks, dial)

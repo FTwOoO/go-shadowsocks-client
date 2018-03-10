@@ -17,6 +17,7 @@ func SocksLocal(socksAddr string, dial dialer.DialFunc) {
 		return
 	}
 
+
 	for {
 		c, err := l.Accept()
 		if err != nil {

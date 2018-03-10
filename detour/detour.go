@@ -41,6 +41,7 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
+	"github.com/FTwOoO/go-shadowsocks-client/dialer"
 )
 
 // if dial or read exceeded this timeout, we consider switch to detour
@@ -66,7 +67,6 @@ func init() {
 	blockDetector.Store(detectorByCountry(""))
 }
 
-type dialFunc func(network, addr string) (net.Conn, error)
 
 type Conn struct {
 	// keep track of the total bytes read in this connection
@@ -83,7 +83,7 @@ type Conn struct {
 	state uint32
 
 	// the function to dial detour if the site fails to connect directly
-	dialDetour dialFunc
+	dialDetour dialer.DialFunc
 
 	muLocalBuffer sync.Mutex
 	// localBuffer keep track of bytes sent through direct connection
@@ -114,7 +114,7 @@ func SetCountry(country string) {
 }
 
 // Dialer returns a function with same signature of net.Dialer.Dial().
-func Dialer(d dialFunc) dialFunc {
+func Dialer(d dialer.DialFunc) dialer.DialFunc {
 	return func(network, addr string) (conn net.Conn, err error) {
 		dc := &Conn{dialDetour: d, network: network, addr: addr}
 		if !whitelisted(addr) {

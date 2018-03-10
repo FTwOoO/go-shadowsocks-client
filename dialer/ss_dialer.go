@@ -7,19 +7,17 @@ import (
 	"encoding/base64"
 	"github.com/riobard/go-shadowsocks2/socks"
 )
-type DialFunc func(network string, addr string) (net.Conn, error)
-type DialMiddleware func(d DialFunc) DialFunc
 
-type ShadowsocksDialer struct {
-	Cipher string
-	Password string
-	Key string
+type Shadowsocks struct {
+	Cipher     string
+	Password   string
+	Key        string
 	ServerAddr string
 
-	ciph func (net.Conn) net.Conn
+	ciph func(net.Conn) net.Conn
 }
 
-func (s * ShadowsocksDialer) getCipherStream() (ciph func (net.Conn) net.Conn, err error) {
+func (s *Shadowsocks) getCipherStream() (ciph func(net.Conn) net.Conn, err error) {
 	if s.ciph != nil {
 		return s.ciph, nil
 	}
@@ -44,9 +42,9 @@ func (s * ShadowsocksDialer) getCipherStream() (ciph func (net.Conn) net.Conn, e
 	return
 }
 
-func (s * ShadowsocksDialer) GenDialer(parentDial DialFunc) DialFunc {
+func (s *Shadowsocks) GenDialer(parentDial DialFunc) DialFunc {
 	return func(network string, addr string) (conn net.Conn, err error) {
-		var ciph func (net.Conn) net.Conn
+		var ciph func(net.Conn) net.Conn
 		ciph, err = s.getCipherStream()
 		if err != nil {
 			return
@@ -79,4 +77,3 @@ func (s * ShadowsocksDialer) GenDialer(parentDial DialFunc) DialFunc {
 		return
 	}
 }
-
