@@ -17,10 +17,6 @@ import (
 	"github.com/FTwOoO/go-shadowsocks-client/serv"
 )
 
-func logf(f string, v ...interface{}) {
-	log.Printf(f, v...)
-}
-
 func onReady() {
 	systray.SetIcon(icon.Data)
 	systray.SetTitle("gss")
@@ -42,6 +38,8 @@ func onExit() {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	//systray.Run(onReady, onExit)
 
 	var flags struct {
@@ -68,7 +66,6 @@ func main() {
 		key = k
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 
 	addr := flags.Client
 	cipher := flags.Cipher

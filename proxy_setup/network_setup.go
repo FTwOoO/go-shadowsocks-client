@@ -1,9 +1,7 @@
 package proxy_setup
 
 import (
-	"os"
 	"log"
-	"time"
 	"context"
 )
 
@@ -12,8 +10,8 @@ type SystemProxySettings interface {
 	TurnOnProxy()
 }
 
-func InitSocksProxySetting(socksAddr string,  ctx context.Context)  {
-	initProxySettings(&DarwinSocks{address:socksAddr}, ctx)
+func InitSocksProxySetting(socksAddr string, ctx context.Context) {
+	initProxySettings(&DarwinSocks{address: socksAddr}, ctx)
 }
 
 func initProxySettings(proxySettings SystemProxySettings, ctx context.Context) {
@@ -27,8 +25,7 @@ func initProxySettings(proxySettings SystemProxySettings, ctx context.Context) {
 				if nil != proxySettings {
 					proxySettings.TurnOffProxy()
 				}
-				time.Sleep(time.Duration(2000))
-				os.Exit(0)
+				return
 			}
 		}
 	}(proxySettings, ctx)
