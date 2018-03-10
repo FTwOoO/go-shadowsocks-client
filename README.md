@@ -16,9 +16,20 @@ make build
 ```
 
 ## Run
+
+I recomment to use [go-shadowsocks2](https://github.com/riobard/go-shadowsocks2) as server, run it:
+
 ```
-gsc --cipher "AES-128-CFB" --password <password> --c "<server>:<port>" --socks ":7079"
+go-shadowsocks2 -s ss://AES-128-CFB:<password>@:<port> -verbose
 ```
+
+then run this client:
+
+```
+gsc --cipher "AES-128-CFB" --password <password> --c "<server>:<port>"
+```
+
+(more ciphers are avalible, see [go-shadowsocks2](https://github.com/riobard/go-shadowsocks2))
 
 ## TODO 
 - systray
