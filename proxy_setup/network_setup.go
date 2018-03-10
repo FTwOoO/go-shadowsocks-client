@@ -3,43 +3,33 @@ package proxy_setup
 import (
 	"os"
 	"log"
-	"runtime"
 	"time"
 	"context"
 )
 
 type SystemProxySettings interface {
-	TurnOnGlobProxy()
-	TurnOffGlobProxy()
+	TurnOffProxy()
+	TurnOnProxy()
 }
 
+func InitSocksProxySetting(socksAddr string,  ctx context.Context)  {
+	initProxySettings(&DarwinSocks{address:socksAddr}, ctx)
+}
 
-func resetProxySettings(proxySettings SystemProxySettings, ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Print("shutdown now ...")
-			if nil != proxySettings{
-				proxySettings.TurnOffGlobProxy()
+func initProxySettings(proxySettings SystemProxySettings, ctx context.Context) {
+	proxySettings.TurnOnProxy()
+
+	go func(proxySettings SystemProxySettings, ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				log.Print("shutdown now ...")
+				if nil != proxySettings {
+					proxySettings.TurnOffProxy()
+				}
+				time.Sleep(time.Duration(2000))
+				os.Exit(0)
 			}
-			time.Sleep(time.Duration(2000))
-			os.Exit(0)
 		}
-	}
-}
-
-func InitProxySettings(bypass []string, addr string, ctx context.Context)  {
-	return
-	var proxySettings SystemProxySettings
-	if runtime.GOOS == "windows" {
-		w := &windows{addr}
-		proxySettings = w
-	} else if runtime.GOOS == "darwin" {
-		d := &darwin{bypass,addr}
-		proxySettings = d
-	}
-	if nil != proxySettings{
-		proxySettings.TurnOnGlobProxy()
-	}
-	go resetProxySettings(proxySettings, ctx)
+	}(proxySettings, ctx)
 }

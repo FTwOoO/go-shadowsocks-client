@@ -1,11 +1,15 @@
 
 
-shadowsocks client for macOS, based on go-shadowsocks2, inpired by flora-kit
+shadowsocks client for macOS, based on [go-shadowsocks2](https://github.com/riobard/go-shadowsocks2), 
+inpired by [flora-kit](https://github.com/huacnlee/flora-kit), [lantern](https://github.com/getlantern) and [cow](https://github.com/cyfdecyf/cow)
 
 
 ## TODO
-- local proxy setting
+- proxy setting
 - local PAC service
+- systray
+- automatically identify blocked sites
+- auto select the fast proxy
 
 ## Build
 ```

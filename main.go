@@ -11,14 +11,38 @@ import (
 	"github.com/riobard/go-shadowsocks2/core"
 	"context"
 	"github.com/FTwOoO/go-shadowsocks-client/proxy_setup"
+	"github.com/getlantern/systray/example/icon"
+	"github.com/getlantern/systray"
+	"fmt"
+	"github.com/FTwOoO/go-shadowsocks-client/serv"
 )
 
 func logf(f string, v ...interface{}) {
 	log.Printf(f, v...)
+}
 
+func onReady() {
+	systray.SetIcon(icon.Data)
+	systray.SetTitle("gss")
+	systray.SetTooltip("a shadowsocks client")
+	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
+
+	for {
+		select {
+		case <-mQuit.ClickedCh:
+			systray.Quit()
+			fmt.Println("Quit2 now...")
+			return
+		}
+	}
+}
+
+func onExit() {
+	// clean up here
 }
 
 func main() {
+	//systray.Run(onReady, onExit)
 
 	var flags struct {
 		Client   string
@@ -56,8 +80,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	proxy_setup.InitProxySettings([]string{}, flags.Socks, ctx)
-	go socksLocal(flags.Socks, addr, ciph.StreamConn)
+	proxy_setup.InitSocksProxySetting(flags.Socks, ctx)
+	go serv.SocksLocal(flags.Socks, addr, ciph.StreamConn)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

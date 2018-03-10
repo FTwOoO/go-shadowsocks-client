@@ -5,49 +5,11 @@ import (
 	"log"
 	"os/exec"
 	"strings"
-	"net"
+	"regexp"
+	"errors"
 )
 
-
-var _ SystemProxySettings = &darwin{}
-type darwin struct {
-	bypassDomains []string
-	address       string
-}
-
-type execNetworkFunc func(name string)
-
-var allow_services = "Wi-Fi|Thunderbolt Bridge|Thunderbolt Ethernet"
-
-func (d *darwin) TurnOffGlobProxy() {
-	execNetworks(func(name string) {
-		runNetworksetup("-setftpproxystate", name, "off")
-		runNetworksetup("-setwebproxystate", name, "off")
-		runNetworksetup("-setsecurewebproxystate", name, "off")
-		runNetworksetup("-setstreamingproxystate", name, "off")
-		runNetworksetup("-setgopherproxystate", name, "off")
-		runNetworksetup("-setsocksfirewallproxystate", name, "on")
-		runNetworksetup("-setproxyautodiscovery", name, "off")
-	})
-}
-
-func (d *darwin) TurnOnGlobProxy() {
-	host, port, _ := net.SplitHostPort(d.address)
-
-	execNetworks(func(name string) {
-		runNetworksetup("-setsocksfirewallproxy", name, host, port)
-	})
-
-	execNetworks(func(name string) {
-		args := []string{"-setproxybypassdomains", name}
-		args = append(args, d.bypassDomains...)
-		runNetworksetup(args...)
-	})
-}
-
 func runNetworksetup(args ...string) string {
-
-	// log.Println("networksetup", args)
 	cmd := exec.Command("networksetup", args...)
 	var out, stderr bytes.Buffer
 	cmd.Stdout = &out
@@ -60,18 +22,49 @@ func runNetworksetup(args ...string) string {
 	return out.String()
 }
 
+type execNetworkFunc func(deviceName string)
+
 func execNetworks(callback execNetworkFunc) {
-	for _, name := range listNetworks() {
-		if !strings.Contains(allow_services, name) {
+	var allow_services = "Wi-Fi|Thunderbolt Bridge|Thunderbolt Ethernet"
+
+	for _, deviceName := range listNetworks() {
+		if !strings.Contains(allow_services, deviceName) {
 			continue
 		}
-		callback(name)
+		callback(deviceName)
 	}
 }
 
-func listNetworks() (networks []string) {
-	out := runNetworksetup("-listallnetworkservices")
-	out = strings.TrimSpace(out)
-	networks = strings.Split(out, "\n")
-	return
+func listNetworks() ([]string) {
+	c := exec.Command("networksetup", "-listallnetworkservices")
+	out, err := c.CombinedOutput()
+	if err != nil {
+		log.Println(errors.New("ns lans:" + string(out) + ":" + err.Error()))
+		return nil
+	}
+	nss := make([]string, 0)
+	reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
+	for _, v := range bytes.Split(bytes.TrimSpace(out), []byte("\n")) {
+		// An asterisk (*) denotes that a network service is disabled.
+		if bytes.Contains(v, []byte("*")) {
+			continue
+		}
+		ns := string(bytes.TrimSpace(v))
+		c := exec.Command("networksetup", "-getinfo", ns)
+		out, err := c.CombinedOutput()
+		if err != nil {
+			log.Println(errors.New("ns gi:" + string(out) + ":" + err.Error()))
+			return nil
+		}
+		if !reg.MatchString(string(out)) {
+			continue
+		}
+		nss = append(nss, ns)
+	}
+	if len(nss) == 0 {
+		log.Println(errors.New("no available network service"))
+
+		return nil
+	}
+	return nss
 }
