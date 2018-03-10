@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"github.com/FTwOoO/go-shadowsocks-client/dialer"
 	"github.com/FTwOoO/go-shadowsocks-client/serv"
-
 	"time"
 	"net"
 )
@@ -68,14 +67,10 @@ func main() {
 		Key: flags.Key,
 	}
 
-	middles := []dialer.DialMiddleware {
-		ssDialer.Dialer,
-	}
 
 	var dial dialer.DialFunc = net.Dial
-	for _, mi := range middles {
-		dial = mi(dial)
-	}
+	dial = ssDialer.GenDialer(dial)
+
 
 	proxy_setup.InitSocksProxySetting(flags.Socks, ctx)
 	go serv.SocksLocal(flags.Socks, dial)

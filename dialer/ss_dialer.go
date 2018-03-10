@@ -6,7 +6,6 @@ import (
 	"github.com/riobard/go-shadowsocks2/core"
 	"encoding/base64"
 	"github.com/riobard/go-shadowsocks2/socks"
-	"fmt"
 )
 type DialFunc func(network string, addr string) (net.Conn, error)
 type DialMiddleware func(d DialFunc) DialFunc
@@ -45,7 +44,7 @@ func (s * ShadowsocksDialer) getCipherStream() (ciph func (net.Conn) net.Conn, e
 	return
 }
 
-func (s * ShadowsocksDialer) Dialer(d DialFunc) DialFunc {
+func (s * ShadowsocksDialer) GenDialer(parentDial DialFunc) DialFunc {
 	return func(network string, addr string) (conn net.Conn, err error) {
 		var ciph func (net.Conn) net.Conn
 		ciph, err = s.getCipherStream()
@@ -53,17 +52,20 @@ func (s * ShadowsocksDialer) Dialer(d DialFunc) DialFunc {
 			return
 		}
 
-		rc, err := d("tcp", s.ServerAddr)
+		rc, err := parentDial("tcp", s.ServerAddr)
 		if err != nil {
 			log.Printf("failed to connect to server %v: %v", s.ServerAddr, err)
 			return
 		}
-		defer rc.Close()
-		rc.(*net.TCPConn).SetKeepAlive(true)
+		if rc2, ok := rc.(*net.TCPConn); ok {
+			rc2.SetKeepAlive(true)
+		}
+
 		rc = ciph(rc)
 
-		tgt, err := addr2SocksAddr(addr)
-		if err != nil {
+		tgt := socks.ParseAddr(addr)
+
+		if tgt == nil {
 			log.Printf("Invalid address: %s %v", addr, err)
 			return
 		}
@@ -78,17 +80,3 @@ func (s * ShadowsocksDialer) Dialer(d DialFunc) DialFunc {
 	}
 }
 
-
-func addr2SocksAddr(addr string) (socks.Addr, error) {
-	//host, port, err := net.SplitHostPort(addr)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//ip := net.ParseIP(host)
-	//if ip != nil {
-	//	return socks.Addr([]byte{})
-	//}
-
-	fmt.Println(addr)
-}
