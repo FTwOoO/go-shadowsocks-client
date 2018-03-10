@@ -21,7 +21,7 @@ func initProxySettings(proxySettings SystemProxySettings, ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Print("shutdown now ...")
+				log.Print("Clean up system proxy setting  ...")
 				if nil != proxySettings {
 					proxySettings.TurnOffProxy()
 				}

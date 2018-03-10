@@ -15,6 +15,7 @@ import (
 	"github.com/getlantern/systray"
 	"fmt"
 	"github.com/FTwOoO/go-shadowsocks-client/serv"
+	"time"
 )
 
 func onReady() {
@@ -80,8 +81,13 @@ func main() {
 	proxy_setup.InitSocksProxySetting(flags.Socks, ctx)
 	go serv.SocksLocal(flags.Socks, addr, ciph.StreamConn)
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGIO)
+	signalMsg := <-quit
+	log.Printf("signal[%v] received, ", signalMsg)
 	cancel()
+
+	//wait other goroutine to exit
+	time.Sleep(3 * time.Second)
+	log.Printf("Server shutdown completed, program exit")
 }
