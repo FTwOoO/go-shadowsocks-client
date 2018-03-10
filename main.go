@@ -82,7 +82,7 @@ func main() {
 	go serv.SocksLocal(flags.Socks, addr, ciph.StreamConn)
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGIO)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGIO, syscall.SIGABRT)
 	signalMsg := <-quit
 	log.Printf("signal[%v] received, ", signalMsg)
 	cancel()
