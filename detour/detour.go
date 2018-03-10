@@ -41,7 +41,6 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
-	"github.com/getlantern/netx"
 )
 
 // if dial or read exceeded this timeout, we consider switch to detour
@@ -123,7 +122,7 @@ func Dialer(d dialFunc) dialFunc {
 			detector := blockDetector.Load().(*Detector)
 			dc.setState(stateInitial)
 			// always try direct connection first
-			dc.conn, err = netx.DialTimeout(network, addr, TimeoutToDetour)
+			dc.conn, err = net.DialTimeout(network, addr, TimeoutToDetour)
 			if err == nil {
 				if !detector.DNSPoisoned(dc.conn) {
 					log.Tracef("Dial %s to %s succeeded", dc.stateDesc(), addr)

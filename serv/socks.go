@@ -7,19 +7,13 @@ import (
 
 	"github.com/riobard/go-shadowsocks2/socks"
 	"log"
+	"github.com/FTwOoO/go-shadowsocks-client/dialer"
 )
 
-// Create a SOCKS server listening on addr and proxy to server.
-func SocksLocal(addr, server string, shadow func(net.Conn) net.Conn) {
-	log.Printf("SOCKS PROXY %s <-> %s", addr, server)
-	TcpLocal(addr, server, shadow, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
-}
-
-// Listen on addr and proxy to server to reach target from getAddr.
-func TcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, error)) {
-	l, err := net.Listen("tcp", addr)
+func SocksLocal(socksAddr string, dial dialer.DialFunc) {
+	l, err := net.Listen("tcp", socksAddr)
 	if err != nil {
-		log.Printf("failed to listen on %s: %v", addr, err)
+		log.Printf("failed to listen on %s: %v", socksAddr, err)
 		return
 	}
 
@@ -34,27 +28,21 @@ func TcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
 
-			tgt, err := getAddr(c)
+			tgt, err := socks.Handshake(c)
 			if err != nil {
 				log.Printf("failed to get target address: %v", err)
 				return
 			}
 
-			rc, err := net.Dial("tcp", server)
+			rc, err := dial("tcp", tgt.String())
 			if err != nil {
-				log.Printf("failed to connect to server %v: %v", server, err)
+				log.Printf("failed to connect to server %v: %v", tgt.String(), err)
 				return
 			}
 			defer rc.Close()
-			rc.(*net.TCPConn).SetKeepAlive(true)
-			rc = shadow(rc)
 
-			if _, err = rc.Write(tgt); err != nil {
-				log.Printf("failed to send target address: %v", err)
-				return
-			}
+			log.Printf("🏄‍ %s <-> %s", c.RemoteAddr(), tgt.String())
 
-			log.Printf("🏄‍ %s <-> %s <-> %s", c.RemoteAddr(), server, tgt)
 			_, _, err = relay(rc, c)
 			if err != nil {
 				if err, ok := err.(net.Error); ok && err.Timeout() {

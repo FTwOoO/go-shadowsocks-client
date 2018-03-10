@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"flag"
 	"log"
 	"os"
@@ -14,8 +13,11 @@ import (
 	"github.com/getlantern/systray/example/icon"
 	"github.com/getlantern/systray"
 	"fmt"
+	"github.com/FTwOoO/go-shadowsocks-client/dialer"
 	"github.com/FTwOoO/go-shadowsocks-client/serv"
+
 	"time"
+	"net"
 )
 
 func onReady() {
@@ -58,28 +60,25 @@ func main() {
 	flag.StringVar(&flags.Password, "password", "", "password")
 	flag.Parse()
 
-	var key []byte
-	if flags.Key != "" {
-		k, err := base64.URLEncoding.DecodeString(flags.Key)
-		if err != nil {
-			log.Fatal(err)
-		}
-		key = k
+
+	ssDialer := &dialer.ShadowsocksDialer{
+		Cipher: flags.Cipher,
+		Password:flags.Password,
+		ServerAddr:flags.Client,
+		Key: flags.Key,
 	}
 
+	middles := []dialer.DialMiddleware {
+		ssDialer.Dialer,
+	}
 
-	addr := flags.Client
-	cipher := flags.Cipher
-	password := flags.Password
-	var err error
-
-	ciph, err := core.PickCipher(cipher, key, password)
-	if err != nil {
-		log.Fatal(err)
+	var dial dialer.DialFunc = net.Dial
+	for _, mi := range middles {
+		dial = mi(dial)
 	}
 
 	proxy_setup.InitSocksProxySetting(flags.Socks, ctx)
-	go serv.SocksLocal(flags.Socks, addr, ciph.StreamConn)
+	go serv.SocksLocal(flags.Socks, dial)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGIO, syscall.SIGABRT)
