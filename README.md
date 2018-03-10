@@ -14,6 +14,7 @@ go get -u github.com/getlantern/systray
 go get -u github.com/stretchr/testify
 make build
 ```
+or [download](https://github.com/FTwOoO/go-shadowsocks-client/files/1799215/gsc.zip) 
 
 ## Run
 
