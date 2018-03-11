@@ -107,12 +107,6 @@ var statesDesc = []string{
 	"detoured",
 }
 
-// SetCountry sets the ISO 3166-1 alpha-2 country code
-// to load country specific detection rules
-func SetCountry(country string) {
-	blockDetector.Store(detectorByCountry(country))
-}
-
 // Dialer returns a function with same signature of net.Dialer.Dial().
 func Dialer(d dialer.DialFunc) dialer.DialFunc {
 	return func(network, addr string) (conn net.Conn, err error) {
