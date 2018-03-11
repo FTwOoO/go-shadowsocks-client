@@ -53,7 +53,7 @@ func handleConnection(c net.Conn, dial dialer.DialFunc) {
 		return
 	}
 
-	rc, err := dial("tcp", tgt.String())
+	rc, err := dial("tcp", tgt.String(), 3*time.Second)
 	if err != nil {
 		log.Printf("failed to connect to server %v: %v", tgt.String(), err)
 		return

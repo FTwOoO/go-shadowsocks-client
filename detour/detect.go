@@ -6,14 +6,12 @@ import (
 
 // Detector is just a set of rules to check if a site is potentially blocked or not
 type Detector struct {
-	DNSPoisoned        func(net.Conn) bool
 	TamperingSuspected func(error) bool
 }
 
 var detectors = make(map[string]*Detector)
 
 var defaultDetector = Detector{
-	DNSPoisoned: func(net.Conn) bool { return false },
 	TamperingSuspected: func(err error) bool {
 		if ne, ok := err.(net.Error); ok && ne.Timeout() {
 			return true
@@ -36,7 +34,6 @@ func detectorByCountry(country string) *Detector {
 		return &defaultDetector
 	}
 	return &Detector{
-		d.DNSPoisoned,
 		func(err error) bool {
 			return defaultDetector.TamperingSuspected(err) || d.TamperingSuspected(err)
 		},

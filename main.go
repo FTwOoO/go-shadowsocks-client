@@ -46,9 +46,10 @@ func main() {
 	}
 
 
-	var dial dialer.DialFunc = net.Dial
-	dial = shadowsocks.GenDialer(dial)
-	dial = detour.Dialer(dial)
+	protocolDial := net.DialTimeout
+	var dial dialer.DialFunc
+	dial = shadowsocks.GenDialer(protocolDial)
+	dial = detour.GenDialer(dial, protocolDial)
 
 	socksListenAddr, err := serv.SocksLocal(dial, ctx)
 	if err != nil {
@@ -64,5 +65,5 @@ func main() {
 
 	//wait other goroutine to exit
 	time.Sleep(3 * time.Second)
-	log.Printf("Server shutdown completed, program exit")
+	log.Printf("program exit")
 }

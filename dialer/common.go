@@ -1,6 +1,9 @@
 package dialer
 
-import "net"
+import (
+	"net"
+	"time"
+)
 
-type DialFunc func(network string, addr string) (net.Conn, error)
+type DialFunc func(network, address string, timeout time.Duration) (net.Conn, error)
 type DialMiddleware func(d DialFunc) DialFunc

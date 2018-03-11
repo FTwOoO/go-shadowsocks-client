@@ -6,6 +6,7 @@ import (
 	"github.com/riobard/go-shadowsocks2/core"
 	"encoding/base64"
 	"github.com/riobard/go-shadowsocks2/socks"
+	"time"
 )
 
 type Shadowsocks struct {
@@ -43,14 +44,14 @@ func (s *Shadowsocks) getCipherStream() (ciph func(net.Conn) net.Conn, err error
 }
 
 func (s *Shadowsocks) GenDialer(parentDial DialFunc) DialFunc {
-	return func(network string, addr string) (conn net.Conn, err error) {
+	return func(network, addr string, timeout time.Duration) (conn net.Conn, err error) {
 		var ciph func(net.Conn) net.Conn
 		ciph, err = s.getCipherStream()
 		if err != nil {
 			return
 		}
 
-		rc, err := parentDial("tcp", s.ServerAddr)
+		rc, err := parentDial("tcp", s.ServerAddr, timeout)
 		if err != nil {
 			log.Printf("failed to connect to server %v: %v", s.ServerAddr, err)
 			return

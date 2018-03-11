@@ -22,9 +22,9 @@ func ForceWhitelist(addr string) {
 	forceWhitelist[addr] = wlEntry{true}
 }
 
-// AddToWl adds a domain to whitelist, all subdomains of this domain
+// AddToWhiteList adds a domain to whitelist, all subdomains of this domain
 // are also considered to be in the whitelist.
-func AddToWl(addr string, permanent bool) {
+func AddToWhiteList(addr string, permanent bool) {
 	log.Tracef("Adding %v to whitelist. Permanent? %v", addr, permanent)
 	muWhitelist.Lock()
 	defer muWhitelist.Unlock()
