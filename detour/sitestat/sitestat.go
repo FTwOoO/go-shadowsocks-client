@@ -16,13 +16,13 @@ type SiteStat struct {
 	vcntLock sync.RWMutex
 }
 
-func newSiteStat() *SiteStat {
+func NewSiteStat() *SiteStat {
 	return &SiteStat{
 		Vcnt: map[string]*VisitCnt{},
 	}
 }
 
-func (ss *SiteStat) get(s string) *VisitCnt {
+func (ss *SiteStat) Get(s string) *VisitCnt {
 	ss.vcntLock.RLock()
 	Vcnt, ok := ss.Vcnt[s]
 	ss.vcntLock.RUnlock()
@@ -41,18 +41,18 @@ func (ss *SiteStat) create(s string) (vcnt *VisitCnt) {
 }
 
 func (ss *SiteStat) GetVisitCnt(host string) (vcnt *VisitCnt) {
-	if vcnt = ss.get(host); vcnt != nil {
+	if vcnt = ss.Get(host); vcnt != nil {
 		return
 	}
 
 	return ss.create(host)
 }
 
-func (ss *SiteStat) store(statPath string) (err error) {
+func (ss *SiteStat) Store(statPath string) (err error) {
 	now := time.Now()
 	var savedSS *SiteStat
 
-	savedSS = newSiteStat()
+	savedSS = NewSiteStat()
 	savedSS.Update = Date(now)
 	ss.vcntLock.RLock()
 	for site, vcnt := range ss.Vcnt {
@@ -95,7 +95,7 @@ func (ss *SiteStat) store(statPath string) (err error) {
 	return
 }
 
-func (ss *SiteStat) load(file string) (err error) {
+func (ss *SiteStat) Load(file string) (err error) {
 
 	if file == "" {
 		return

@@ -34,23 +34,13 @@ func (d *Date) UnmarshalJSON(input []byte) error {
 var visitLock sync.Mutex
 
 type VisitCnt struct {
-	Direct   vcntint `json:"direct"`
-	Blocked  vcntint `json:"block"`
-	Recent   Date    `json:"recent"` //第一次访问的时间
-	rUpdated bool                    // whether Recent is updated, we only need date precision
+	Direct  vcntint `json:"direct"`
+	Blocked vcntint `json:"block"`
 }
 
 func newVisitCnt(direct, blocked vcntint) *VisitCnt {
-	return &VisitCnt{direct, blocked, Date(time.Now()), true}
+	return &VisitCnt{direct, blocked}
 }
-
-func newVisitCntWithTime(direct, blocked vcntint, t time.Time) *VisitCnt {
-	return &VisitCnt{direct, blocked, Date(t), true}
-}
-
-//第一次访问的时间在10天前，说明判断结果已经稳定了
-const siteStaleThreshold = 10 * 24 * time.Hour
-
 
 //要不要记录保存为白名单，很久没访问的也不需要记录
 func (vc *VisitCnt) shouldNotSave() bool {
@@ -72,23 +62,34 @@ func (vc *VisitCnt) AsDirect() bool {
 	return (vc.Blocked == 0) || (vc.Direct-vc.Blocked >= directDelta)
 }
 
-func (vc *VisitCnt) visit(inc *vcntint) {
-	if !vc.rUpdated {
-		vc.rUpdated = true
-		visitLock.Lock()
-		vc.Recent = Date(time.Now())
-		visitLock.Unlock()
-	}
-}
 
 //记录直连的结果
 func (vc *VisitCnt) DirectVisit() {
 	// 一次成功的直连即认为没有被block
-	vc.visit(&vc.Direct)
-	vc.Blocked = 0
+	visitLock.Lock()
+	vc.Direct += 1
+	visitLock.Unlock()
 }
 
 //记录走代理的结果
 func (vc *VisitCnt) BlockedVisit() {
-	vc.visit(&vc.Blocked)
+	visitLock.Lock()
+	vc.Blocked += 1
+	visitLock.Unlock()
+}
+
+//记录不要直连的结果
+func (vc *VisitCnt) DontDirectVisit() {
+	visitLock.Lock()
+	vc.Direct = 0
+	vc.Blocked = 1
+	visitLock.Unlock()
+}
+
+//记录不要走代理的结果
+func (vc *VisitCnt) DontBlockedVisit() {
+	visitLock.Lock()
+	vc.Direct = 1
+	vc.Blocked = 0
+	visitLock.Unlock()
 }
