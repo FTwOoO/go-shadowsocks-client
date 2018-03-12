@@ -20,6 +20,7 @@ import (
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
+	detour.InitSiteStat("stat.json")
 
 	//systray.Run(onReady, onExit)
 

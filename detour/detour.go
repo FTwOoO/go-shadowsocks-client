@@ -8,11 +8,11 @@ import (
 	"time"
 	"log"
 	"github.com/FTwOoO/go-shadowsocks-client/dialer"
-	"github.com/FTwOoO/go-shadowsocks-client/detour/sitestat"
 )
 
 var (
-	detector *Detector = &defaultDetector
+	detector *Detector   = &Detector{SiteStat:siteStat}
+	rules    DetourRules = &CNRules{}
 )
 
 type Conn struct {
@@ -35,6 +35,7 @@ type Conn struct {
 	dialDetour dialer.DialFunc
 
 	network, addr string
+	host          string
 }
 
 const (
@@ -52,35 +53,44 @@ var statesDesc = []string{
 func GenDialer(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.DialFunc {
 	return func(network, addr string, timeout time.Duration) (conn net.Conn, err error) {
 		dc := &Conn{dialDetour: proxyDial, network: network, addr: addr}
-		vcnt := dc.GetSiteInfo()
+		dc.host, _, _ = net.SplitHostPort(dc.addr)
+		rule := dc.GetRule()
 
-		if vcnt.AsDirect() || !vcnt.AsBlocked() {
+		if rule == AlwaysDirect ||
+			(rule == AutoTry && detector.TryDirect(dc.host)) {
+
 			log.Printf("Attempting direct connection for %v", addr)
 			dc.setState(stateDirect)
 			dc.conn, err = directDial(network, addr, defaultDialTimeout)
 			if err == nil {
 				return dc, nil
-			} else if detector.IsTimeout(err) {
-				log.Printf("Dial %s to %s timeout[%s], try detour", dc.stateDesc(), addr, err)
+			}
+
+			if rule == AlwaysDirect {
+				return
 			} else {
 				log.Printf("Dial %s to %s failed[%s], try detour", dc.stateDesc(), addr, err)
 			}
 		}
-		log.Printf("Detouring %v", addr)
-		dc.setState(stateDetour)
-		dc.conn, err = dc.dialDetour(network, addr, defaultDialTimeout)
-		if err != nil {
-			log.Printf("Dial %s failed: %s", dc.stateDesc(), err)
-			return nil, err
+
+		if rule == AlwaysProxy || rule == AutoTry {
+			log.Printf("Detouring %v", addr)
+			dc.setState(stateDetour)
+			dc.conn, err = dc.dialDetour(network, addr, defaultDialTimeout)
+			if err != nil {
+				log.Printf("Dial %s failed: %s", dc.stateDesc(), err)
+				return nil, err
+			}
+			log.Printf("Dial %s to %s succeeded", dc.stateDesc(), addr)
+			return dc, err
 		}
-		log.Printf("Dial %s to %s succeeded", dc.stateDesc(), addr)
-		return dc, err
+
+		return
 	}
 }
 
-func (dc *Conn) GetSiteInfo() (vcnt *sitestat.VisitCnt) {
-	host, _, _ := net.SplitHostPort(dc.addr)
-	vcnt = siteStat.GetVisitCnt(host)
+func (dc *Conn) GetRule() (r DetourStrategy) {
+	r = rules.GetRule(dc.host)
 	return
 }
 
@@ -97,7 +107,7 @@ func (dc *Conn) Read(b []byte) (n int, err error) {
 			log.Printf("Read %d bytes from %s %s, EOF", n, dc.addr, dc.stateDesc())
 			return
 		}
-		log.Printf("Read from %s %s failed: %s", dc.addr, dc.stateDesc(), err)
+		//log.Printf("Read from %s %s failed: %s", dc.addr, dc.stateDesc(), err)
 		bytes := atomic.LoadInt64(&dc.readBytes)
 
 		if !detector.IsTimeout(err) && bytes > 0 && bytes <= 4096 {
@@ -115,11 +125,6 @@ func (dc *Conn) Read(b []byte) (n int, err error) {
 }
 
 func (dc *Conn) Write(b []byte) (n int, err error) {
-	defer func() {
-		if err != nil {
-			dc.lastError = err
-		}
-	}()
 	if n, err = dc.getConn().Write(b); err != nil {
 		log.Printf("Error while write %d bytes to %s %s: %s", len(b), dc.addr, dc.stateDesc(), err)
 		return
@@ -130,25 +135,28 @@ func (dc *Conn) Write(b []byte) (n int, err error) {
 
 func (dc *Conn) Close() error {
 	log.Printf("Closing %s connection to %s", dc.stateDesc(), dc.addr)
-	if dc.lastError == nil {
-		switch {
-		case dc.inState(stateDirect):
-			log.Printf("Direct is ok for %s", dc.addr)
-			dc.GetSiteInfo().DirectVisit()
 
-		case dc.inState(stateDetour):
-			log.Printf("Detoured is ok for %s", dc.addr)
-			dc.GetSiteInfo().BlockedVisit()
-		}
-	} else {
-		switch {
-		case dc.inState(stateDirect):
-			log.Printf("Direct error for %s, detour next time", dc.addr)
-			dc.GetSiteInfo().DontDirectVisit()
+	if dc.GetRule() == AutoTry {
+		if dc.lastError == nil {
+			switch {
+			case dc.inState(stateDirect):
+				log.Printf("Direct is ok for %s", dc.addr)
+				detector.DirectVisit(dc.host)
 
-		case dc.inState(stateDetour):
-			log.Printf("Direct error for %s, direct next time", dc.addr)
-			dc.GetSiteInfo().DontBlockedVisit()
+			case dc.inState(stateDetour):
+				log.Printf("Detoured is ok for %s", dc.addr)
+				detector.BlockedVisit(dc.host)
+			}
+		} else {
+			switch {
+			case dc.inState(stateDirect):
+				log.Printf("Direct error for %s, detour next time", dc.addr)
+				detector.DontDirectVisit(dc.host)
+
+			case dc.inState(stateDetour):
+				log.Printf("Direct error for %s, direct next time", dc.addr)
+				detector.DontBlockedVisit(dc.host)
+			}
 		}
 	}
 
