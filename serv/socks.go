@@ -11,7 +11,8 @@ import (
 	"context"
 )
 
-func SocksLocal(dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error){
+
+func SocksLocal(dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Printf("failed to listen: %v", err)
@@ -38,7 +39,6 @@ func SocksLocal(dial dialer.DialFunc, ctx context.Context) (listenAddr string, e
 			}
 		}
 	}()
-
 
 	return
 }
@@ -70,7 +70,6 @@ func handleConnection(c net.Conn, dial dialer.DialFunc) {
 		log.Printf("relay error: %v", err)
 	}
 }
-
 
 // relay copies between left and right bidirectionally. Returns number of
 // bytes copied from right to left, from left to right, and any error occurred.
