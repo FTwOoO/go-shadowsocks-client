@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"github.com/riobard/go-shadowsocks2/core"
 	"context"
-	"github.com/FTwOoO/go-shadowsocks-client/proxy_setup"
-	"github.com/FTwOoO/go-shadowsocks-client/dialer"
-	"github.com/FTwOoO/go-shadowsocks-client/serv"
+	"github.com/FTwOoO/proxycore/proxy_setup"
+	"github.com/FTwOoO/go-ss/dialer"
+	"github.com/FTwOoO/go-ss/serv"
 	"time"
 	"net"
-	"github.com/FTwOoO/go-shadowsocks-client/detour"
+	"github.com/FTwOoO/go-ss/detour"
 )
 
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/riobard/go-shadowsocks2/socks"
 	"log"
-	"github.com/FTwOoO/go-shadowsocks-client/dialer"
+	"github.com/FTwOoO/go-ss/dialer"
 	"context"
 )
 

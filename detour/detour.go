@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 	"log"
-	"github.com/FTwOoO/go-shadowsocks-client/dialer"
+	"github.com/FTwOoO/go-ss/dialer"
 )
 
 var (
