@@ -17,18 +17,17 @@ var _ ForwardConnection = &ShadowsocksRawConn{}
 
 type ShadowsocksRawConn struct {
 	Conn                net.Conn
-	params              *ShadowsocksRawConnParams
+	params              ShadowsocksRawConnParams
 	isServerTargetRead  bool
 	isClientTargetWrite bool
 	forwardReady        chan socks.Addr
 }
 
 func (cc *ShadowsocksRawConn) Init(parent net.Conn, args interface{}) error {
-	if v, ok := args.(*ShadowsocksRawConnParams); ok {
+	if v, ok := args.(ShadowsocksRawConnParams); ok {
+		cc.params  = v
 
-		if cc.params.IsServer != false {
-			cc.params.Target = v.Target
-		} else {
+		if cc.params.IsServer {
 			cc.forwardReady = make(chan socks.Addr, 1)
 		}
 		cc.Conn = parent

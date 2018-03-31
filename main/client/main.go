@@ -17,41 +17,55 @@ import (
 	"github.com/FTwOoO/go-ss/detour"
 )
 
+type ClientConfig struct {
+	ApplicationProtoConfig interface{}
+	Detour                 bool
+}
 
-func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+func StartClient(c *ClientConfig) context.CancelFunc {
 	detour.InitSiteStat("stat.json")
-
-	//systray.Run(onReady, onExit)
-
-	var flags struct {
-		Client   string
-		Cipher   string
-		Password string
-	}
-
-	flag.StringVar(&flags.Client, "s", "", "client connect address or url")
-	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
-	flag.StringVar(&flags.Password, "password", "", "password")
-	flag.Parse()
-
-
-	shadowsocks := &dialer.PrococolConfig{
-		Cipher: flags.Cipher,
-		Password:flags.Password,
-		ServerAddr:flags.Client,
-	}
-
+	ctx, cancel := context.WithCancel(context.Background())
 
 	transportDial := net.DialTimeout
-	applicationProtocolDial := shadowsocks.GenClientDialer(transportDial)
-	dial := detour.GenDialer(applicationProtocolDial, transportDial)
+	dial := c.ApplicationProtoConfig.(*dialer.SSPrococolConfig).GenClientDialer(transportDial)
+
+	if c.Detour == true {
+		dial = detour.GenDialer(dial, transportDial)
+	}
 
 	socksListenAddr, err := serv.SocksLocal(dial, ctx)
 	if err != nil {
 		panic(err)
 	}
 	proxy_setup.InitSocksProxySetting(socksListenAddr, ctx)
+	return cancel
+}
+
+func main() {
+
+	//systray.Run(onReady, onExit)
+
+	var flags struct {
+		Server   string
+		Cipher   string
+		Password string
+	}
+
+	flag.StringVar(&flags.Server, "server", "", "client connect address or url")
+	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
+	flag.StringVar(&flags.Password, "password", "", "password")
+	flag.Parse()
+
+	shadowsocks := &dialer.SSPrococolConfig{
+		Cipher:     flags.Cipher,
+		Password:   flags.Password,
+		ServerAddr: flags.Server,
+	}
+
+	cancel := StartClient(&ClientConfig{
+		ApplicationProtoConfig: shadowsocks,
+		Detour: true,
+	})
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGIO, syscall.SIGABRT)

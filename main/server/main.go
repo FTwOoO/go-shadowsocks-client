@@ -11,8 +11,8 @@ import (
 	"context"
 	"github.com/FTwOoO/go-ss/dialer"
 	"github.com/FTwOoO/go-ss/serv"
-	"time"
 	"github.com/FTwOoO/go-ss/detour"
+	"time"
 )
 
 
@@ -33,7 +33,7 @@ func main() {
 	flag.Parse()
 
 
-	shadowsocks := &dialer.PrococolConfig{
+	shadowsocks := &dialer.SSPrococolConfig{
 		Cipher: flags.Cipher,
 		Password:flags.Password,
 		ServerAddr:"",

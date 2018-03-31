@@ -13,7 +13,7 @@ type CipherConnParams struct {
 	Password string
 }
 
-func (s *CipherConnParams) GetCipherStream() (ciph func(net.Conn) net.Conn, err error) {
+func (s CipherConnParams) GetCipherStream() (ciph func(net.Conn) net.Conn, err error) {
 	var ss core.Cipher
 	ss, err = core.PickCipher(s.Cipher, []byte{}, s.Password)
 	if err != nil {
@@ -29,11 +29,11 @@ var _ CommonConnection = &CipherConn{}
 type CipherConn struct {
 	Conn     net.Conn
 	wrapConn net.Conn
-	params   *CipherConnParams
+	params   CipherConnParams
 }
 
 func (cc *CipherConn) Init(parent net.Conn, args interface{}) (err error) {
-	if v, ok := args.(*CipherConnParams); ok {
+	if v, ok := args.(CipherConnParams); ok {
 		cc.params = v
 		cc.Conn = parent
 		wrapConnFunc, err := cc.params.GetCipherStream()

@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-type PrococolConfig struct {
+type SSPrococolConfig struct {
 	Cipher     string
 	Password   string
 	ServerAddr string
 }
 
-func (s *PrococolConfig) GenServerConn(conn net.Conn) net.Conn {
+func (s *SSPrococolConfig) GenServerConn(conn net.Conn) net.Conn {
 	ciphConn := &CipherConn{}
 	ciphConn.Init(conn, &CipherConnParams{s.Cipher, s.Password})
 
@@ -23,7 +23,7 @@ func (s *PrococolConfig) GenServerConn(conn net.Conn) net.Conn {
 }
 
 
-func (s *PrococolConfig) GenClientDialer(parentDial DialFunc) DialFunc {
+func (s *SSPrococolConfig) GenClientDialer(parentDial DialFunc) DialFunc {
 	return func(network, addr string, timeout time.Duration) (conn net.Conn, err error) {
 
 
@@ -44,10 +44,11 @@ func (s *PrococolConfig) GenClientDialer(parentDial DialFunc) DialFunc {
 		}
 
 		ciphConn := &CipherConn{}
-		ciphConn.Init(rc, &CipherConnParams{s.Cipher, s.Password})
+		ciphConn.Init(rc, CipherConnParams{s.Cipher, s.Password})
 
 		shadowsocksConn := &ShadowsocksRawConn{}
-		shadowsocksConn.Init(ciphConn, &ShadowsocksRawConnParams{tgt, false})
+		params := ShadowsocksRawConnParams{tgt, false}
+		shadowsocksConn.Init(ciphConn, params)
 		conn = shadowsocksConn
 		return
 	}
