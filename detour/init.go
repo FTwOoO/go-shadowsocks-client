@@ -3,7 +3,7 @@ package detour
 import (
 	"sync"
 	"time"
-	"github.com/FTwOoO/go-shadowsocks-client/detour/sitestat"
+	"github.com/FTwOoO/go-ss/detour/sitestat"
 )
 
 const minDialTimeout = 3 * time.Second

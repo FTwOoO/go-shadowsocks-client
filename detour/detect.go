@@ -2,7 +2,7 @@ package detour
 
 import (
 	"net"
-	"github.com/FTwOoO/go-shadowsocks-client/detour/sitestat"
+	"github.com/FTwOoO/go-ss/detour/sitestat"
 )
 
 type Detector struct {
