@@ -27,7 +27,7 @@ func main() {
 		Socks    string
 	}
 
-	flag.StringVar(&flags.Server, "s", "", "server add to listen")
+	flag.StringVar(&flags.Server, "server", "", "server add to listen")
 	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
 	flag.StringVar(&flags.Password, "password", "", "password")
 	flag.Parse()

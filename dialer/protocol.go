@@ -15,10 +15,16 @@ type SSPrococolConfig struct {
 
 func (s *SSPrococolConfig) GenServerConn(conn net.Conn) net.Conn {
 	ciphConn := &CipherConn{}
-	ciphConn.Init(conn, &CipherConnParams{s.Cipher, s.Password})
+	err := ciphConn.Init(conn, CipherConnParams{s.Cipher, s.Password})
+	if err != nil {
+		panic(err)
+	}
 
 	shadowsocksConn := &ShadowsocksRawConn{}
-	shadowsocksConn.Init(ciphConn, &ShadowsocksRawConnParams{IsServer:true})
+	err = shadowsocksConn.Init(ciphConn, ShadowsocksRawConnParams{IsServer:true})
+	if err != nil {
+		panic(err)
+	}
 	return shadowsocksConn
 }
 

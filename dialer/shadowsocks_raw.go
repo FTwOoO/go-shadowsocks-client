@@ -5,7 +5,7 @@ import (
 	"github.com/riobard/go-shadowsocks2/socks"
 	"time"
 	"log"
-	"errors"
+	"fmt"
 )
 
 type ShadowsocksRawConnParams struct {
@@ -26,14 +26,16 @@ type ShadowsocksRawConn struct {
 func (cc *ShadowsocksRawConn) Init(parent net.Conn, args interface{}) error {
 	if v, ok := args.(ShadowsocksRawConnParams); ok {
 		cc.params  = v
+		cc.Conn = parent
 
 		if cc.params.IsServer {
 			cc.forwardReady = make(chan socks.Addr, 1)
 		}
-		cc.Conn = parent
+
+		return  nil
 	}
 
-	return errors.New("")
+	return fmt.Errorf("arg error:%s", args)
 }
 
 func (cc *ShadowsocksRawConn) ForwardReady() <-chan socks.Addr {

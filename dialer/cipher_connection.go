@@ -3,9 +3,9 @@ package dialer
 import (
 	"net"
 	"time"
-	"errors"
 	"log"
 	"github.com/riobard/go-shadowsocks2/core"
+	"fmt"
 )
 
 type CipherConnParams struct {
@@ -42,9 +42,10 @@ func (cc *CipherConn) Init(parent net.Conn, args interface{}) (err error) {
 		}
 
 		cc.wrapConn = wrapConnFunc(cc.Conn)
+		return nil
 	}
 
-	return errors.New("")
+	return fmt.Errorf("args is not CipherConnParams:%s", args)
 }
 
 func (cc *CipherConn) Read(b []byte) (n int, err error) {
