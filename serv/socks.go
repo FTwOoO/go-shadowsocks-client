@@ -60,7 +60,7 @@ func handleConnection(c net.Conn, dial dialer.DialFunc) {
 	}
 	defer rc.Close()
 
-	log.Printf("🏄‍ %s <-> %s", c.RemoteAddr(), tgt.String())
+	log.Printf("🏄‍ %s <-proxy-> %s[SOCKS] <-forward-> %s <-tunnel-> %s <-forward-> %s", c.RemoteAddr(), c.LocalAddr(), rc.LocalAddr(), rc.RemoteAddr(), tgt.String())
 
 	_, _, err = relay(rc, c)
 	if err != nil {

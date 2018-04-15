@@ -2,7 +2,6 @@ package serv
 
 import (
 	"net"
-	"github.com/riobard/go-shadowsocks2/socks"
 	"log"
 	"context"
 	"github.com/FTwOoO/go-ss/dialer"
@@ -30,15 +29,12 @@ func TcpRemote(addr string, trans func(conn net.Conn) net.Conn, ctx context.Cont
 					log.Printf("failed to accept: %s", err)
 					continue
 				}
+				c.(*net.TCPConn).SetKeepAlive(true)
 				c = trans(c)
 
-				select {
-				case <-time.After(5*time.Second):
-					log.Printf("timeout for connection(%s) to receive target on %s", c.RemoteAddr(), addr)
-					c.Close()
-				case addr := <-c.(dialer.ForwardConnection).ForwardReady():
-					go forwardConnection(c, addr)
-				}
+				go forwardConnection(c)
+
+
 			}
 		}
 	}()
@@ -46,26 +42,37 @@ func TcpRemote(addr string, trans func(conn net.Conn) net.Conn, ctx context.Cont
 	return
 }
 
-func forwardConnection(c net.Conn, tgt socks.Addr) {
-	defer c.Close()
-	c.(*net.TCPConn).SetKeepAlive(true)
+func forwardConnection(c net.Conn) {
 
-	rc, err := net.Dial("tcp", tgt.String())
-	if err != nil {
-		log.Printf("failed to connect to target: %v", err)
-		return
-	}
+	go func() {
+		select {
+		case tgt := <-c.(dialer.ForwardConnection).ForwardReady():
+			defer c.Close()
 
-	defer rc.Close()
+			rc, err := net.Dial("tcp", tgt.String())
+			if err != nil {
+				log.Printf("failed to connect to target: %v", err)
+				return
+			}
 
-	log.Printf("🏄‍ %s <-> %s", c.RemoteAddr(), tgt.String())
+			defer rc.Close()
+			log.Printf("🏄‍ %s <-tunnel-> %s <-forward-> %s", c.RemoteAddr(), c.LocalAddr(), tgt.String())
+			_, _, err = relay(rc, c)
+			if err != nil {
+				if err, ok := err.(net.Error); ok && err.Timeout() {
+					return // ignore i/o timeout
+				}
+				log.Printf("relay error: %v", err)
+			}
 
-	_, _, err = relay(rc, c)
-	if err != nil {
-		if err, ok := err.(net.Error); ok && err.Timeout() {
-			return // ignore i/o timeout
+
+		case <-time.After(5 * time.Second):
+			log.Printf("timeout for connection(%s) <-> %s", c.RemoteAddr(), c.LocalAddr())
+			c.Close()
 		}
-		log.Printf("relay error: %v", err)
-	}
-}
 
+	}()
+
+	c.Read(nil)
+
+}

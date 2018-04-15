@@ -48,6 +48,7 @@ func (cc *ShadowsocksRawConn) ForwardReady() <-chan socks.Addr {
 func (cc *ShadowsocksRawConn) Read(b []byte) (n int, err error) {
 	if cc.params.IsServer && !cc.isServerTargetRead {
 		var tgt socks.Addr
+
 		tgt, err = socks.ReadAddr(cc.Conn)
 		if err != nil {
 			log.Printf("failed to get target address: %v", err)
