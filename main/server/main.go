@@ -36,7 +36,6 @@ func main() {
 	shadowsocks := &dialer.SSPrococolConfig{
 		Cipher: flags.Cipher,
 		Password:flags.Password,
-		ServerAddr:"",
 	}
 
 	err := serv.TcpRemote(flags.Server, shadowsocks.GenServerConn, ctx)

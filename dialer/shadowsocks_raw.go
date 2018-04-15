@@ -30,9 +30,12 @@ func (cc *ShadowsocksRawConn) Init(parent net.Conn, args interface{}) error {
 
 		if cc.params.IsServer {
 			cc.forwardReady = make(chan socks.Addr, 1)
+		} else {
+			//把头部发送出去
+			cc.Write(nil)
 		}
 
-		return  nil
+		return nil
 	}
 
 	return fmt.Errorf("arg error:%s", args)
@@ -68,7 +71,11 @@ func (cc *ShadowsocksRawConn) Write(b []byte) (n int, err error) {
 		cc.isClientTargetWrite = true
 	}
 
-	return cc.Conn.Write(b)
+	if b != nil {
+		return cc.Conn.Write(b)
+	}
+
+	return
 }
 
 func (cc *ShadowsocksRawConn) Close() error {

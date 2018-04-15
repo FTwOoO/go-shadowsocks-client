@@ -34,7 +34,7 @@ func TcpRemote(addr string, trans func(conn net.Conn) net.Conn, ctx context.Cont
 
 				select {
 				case <-time.After(5*time.Second):
-					log.Printf("timeout for connection to receive target: %s", c.RemoteAddr())
+					log.Printf("timeout for connection(%s) to receive target on %s", c.RemoteAddr(), addr)
 					c.Close()
 				case addr := <-c.(dialer.ForwardConnection).ForwardReady():
 					go forwardConnection(c, addr)

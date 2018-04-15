@@ -10,7 +10,7 @@ import (
 type SSPrococolConfig struct {
 	Cipher     string
 	Password   string
-	ServerAddr string
+	ServerAddr string  //client only
 }
 
 func (s *SSPrococolConfig) GenServerConn(conn net.Conn) net.Conn {
@@ -50,11 +50,17 @@ func (s *SSPrococolConfig) GenClientDialer(parentDial DialFunc) DialFunc {
 		}
 
 		ciphConn := &CipherConn{}
-		ciphConn.Init(rc, CipherConnParams{s.Cipher, s.Password})
+		err = ciphConn.Init(rc, CipherConnParams{s.Cipher, s.Password})
+		if err != nil {
+			return
+		}
 
 		shadowsocksConn := &ShadowsocksRawConn{}
 		params := ShadowsocksRawConnParams{tgt, false}
-		shadowsocksConn.Init(ciphConn, params)
+		err = shadowsocksConn.Init(ciphConn, params)
+		if err != nil {
+			return
+		}
 		conn = shadowsocksConn
 		return
 	}
