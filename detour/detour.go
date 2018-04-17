@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	detector *Detector   = &Detector{SiteStat:siteStat}
+	detector *Detector   = &Detector{SiteStat: siteStat}
 	rules    DetourRules = &CNRules{}
 )
 
@@ -81,6 +81,7 @@ func GenDialer(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.Dia
 				log.Printf("Dial %s failed: %s", dc.stateDesc(), err)
 				return nil, err
 			}
+
 			log.Printf("Dial %s to %s succeeded", dc.stateDesc(), addr)
 			return dc, err
 		}

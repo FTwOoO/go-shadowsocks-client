@@ -46,13 +46,11 @@ func main() {
 	//systray.Run(onReady, onExit)
 
 	var flags struct {
-		Force bool
 		Server   string
 		Cipher   string
 		Password string
 	}
 
-	flag.BoolVar(&flags.Force, "force", false, "client connect address or url")
 	flag.StringVar(&flags.Server, "server", "", "client connect address or url")
 	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
 	flag.StringVar(&flags.Password, "password", "", "password")
@@ -66,7 +64,7 @@ func main() {
 
 	cancel := StartClient(&ClientConfig{
 		ApplicationProtoConfig: shadowsocks,
-		Detour: flags.Force,
+		Detour: true,
 	})
 
 	quit := make(chan os.Signal, 1)

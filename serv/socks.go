@@ -11,7 +11,6 @@ import (
 	"context"
 )
 
-
 func SocksLocal(dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -59,8 +58,6 @@ func handleConnection(c net.Conn, dial dialer.DialFunc) {
 		return
 	}
 	defer rc.Close()
-
-	log.Printf("🏄‍ %s <-proxy-> %s[SOCKS] <-forward-> %s <-tunnel-> %s <-forward-> %s", c.RemoteAddr(), c.LocalAddr(), rc.LocalAddr(), rc.RemoteAddr(), tgt.String())
 
 	_, _, err = relay(rc, c)
 	if err != nil {
