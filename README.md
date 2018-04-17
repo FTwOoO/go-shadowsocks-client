@@ -8,26 +8,19 @@ Auto set the system socks proxy, auto identify blocked sites, no config!
 
 ## Build
 ```
-go get -u golang.org/x/crypto/hkdf
-go get -u github.com/riobard/go-shadowsocks2
-go get -u github.com/getlantern/systray
-go get -u github.com/stretchr/testify
 make build
 ```
 or [download](https://github.com/FTwOoO/go-shadowsocks-client/files/1799215/gsc.zip) 
 
 ## Run
-
-I recomment to use [go-shadowsocks2](https://github.com/riobard/go-shadowsocks2) as server, run it:
-
+Server:
 ```
-go-shadowsocks2 -s ss://AES-128-CFB:<password>@:<port> -verbose
+gss --cipher "AES-128-CFB" --password <password> --server <server>:<port>
 ```
 
-then run this client:
-
+Client:
 ```
-gsc --cipher "AES-128-CFB" --password <password> --c "<server>:<port>"
+gsc --cipher "AES-128-CFB" --password <password> --server <server>:<port>
 ```
 
 (more ciphers are avalible, see [go-shadowsocks2](https://github.com/riobard/go-shadowsocks2))
