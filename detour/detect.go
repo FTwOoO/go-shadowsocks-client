@@ -18,27 +18,24 @@ func (self *Detector) IsTimeout(err error) bool {
 }
 
 func (self *Detector) TryDirect(host string) bool {
+
+	ip:=net.ParseIP(host)
+	if ip != nil {
+		return true
+	}
+
 	vcnt := self.SiteStat.GetVisitCnt(host)
 	return (vcnt.AsDirect() || !vcnt.AsBlocked())
 }
 
-func (self *Detector) DirectVisit(host string) {
+func (self *Detector) DirectVisitSuccess(host string) {
 	vcnt := self.SiteStat.GetVisitCnt(host)
 	vcnt.DirectVisit()
 }
 
 
-func (self *Detector) BlockedVisit(host string) {
+func (self *Detector) BlockedVisitSuccess(host string) {
 	vcnt := self.SiteStat.GetVisitCnt(host)
 	vcnt.BlockedVisit()
 }
 
-func (self *Detector) DontDirectVisit(host string) {
-	vcnt := self.SiteStat.GetVisitCnt(host)
-	vcnt.DontDirectVisit()
-}
-
-func (self *Detector) DontBlockedVisit(host string) {
-	vcnt := self.SiteStat.GetVisitCnt(host)
-	vcnt.DontBlockedVisit()
-}

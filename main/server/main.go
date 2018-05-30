@@ -11,14 +11,12 @@ import (
 	"context"
 	"github.com/FTwOoO/go-ss/dialer"
 	"github.com/FTwOoO/go-ss/serv"
-	"github.com/FTwOoO/go-ss/detour"
 	"time"
 )
 
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-	detour.InitSiteStat("stat.json")
 
 	var flags struct {
 		Server   string

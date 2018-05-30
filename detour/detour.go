@@ -41,13 +41,13 @@ type Conn struct {
 const (
 	stateInitial uint32 = iota
 	stateDirect
-	stateDetour
+	stateProxy
 )
 
 var statesDesc = []string{
-	"initially",
-	"directly",
-	"detoured",
+	"initial",
+	"direct",
+	"proxy",
 }
 
 func GenDialer(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.DialFunc {
@@ -56,37 +56,47 @@ func GenDialer(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.Dia
 		dc.host, _, _ = net.SplitHostPort(dc.addr)
 		rule := dc.GetRule()
 
-		if rule == AlwaysDirect ||
-			(rule == AutoTry && detector.TryDirect(dc.host)) {
+		try_times := 0
 
-			log.Printf("Attempting direct connection for %v", addr)
-			dc.setState(stateDirect)
-			dc.conn, err = directDial(network, addr, defaultDialTimeout)
-			if err == nil {
-				return dc, nil
-			}
-
-			if rule == AlwaysDirect {
-				return
-			} else {
-				log.Printf("Dial %s to %s failed[%s], try detour", dc.stateDesc(), addr, err)
-			}
+		if rule == AlwaysDirect || (rule == AutoTry && detector.TryDirect(dc.host)) {
+			goto DirectDial
+		} else {
+			goto ProxyDial
 		}
 
-		if rule == AlwaysProxy || rule == AutoTry {
-			log.Printf("Detouring %v", addr)
-			dc.setState(stateDetour)
-			dc.conn, err = dc.dialDetour(network, addr, defaultDialTimeout)
-			if err != nil {
-				log.Printf("Dial %s failed: %s", dc.stateDesc(), err)
-				return nil, err
-			}
 
-			log.Printf("Dial %s to %s succeeded", dc.stateDesc(), addr)
-			return dc, err
+	DirectDial:
+		try_times += 1
+		log.Printf("try direct %v", addr)
+		dc.setState(stateDirect)
+		dc.conn, err = directDial(network, addr, defaultDialTimeout)
+		if err == nil {
+			return dc, nil
 		}
 
-		return
+		log.Printf("direct to %s failed[%s], try detour", addr, err)
+		if try_times >= 2 || rule == AlwaysDirect {
+			return
+		} else {
+			goto ProxyDial
+		}
+
+	ProxyDial:
+		try_times += 1
+		log.Printf("try proxy %v", addr)
+		dc.setState(stateProxy)
+		dc.conn, err = dc.dialDetour(network, addr, defaultDialTimeout)
+		if err == nil {
+			log.Printf("proxy to %s succeeded", addr)
+			return dc, nil
+		}
+
+		log.Printf("proxy to %s failed: %s", addr, err)
+		if try_times >= 2 || rule == AlwaysProxy {
+			return
+		} else {
+			goto DirectDial
+		}
 	}
 }
 
@@ -135,28 +145,18 @@ func (dc *Conn) Write(b []byte) (n int, err error) {
 }
 
 func (dc *Conn) Close() error {
-	log.Printf("Closing %s connection to %s", dc.stateDesc(), dc.addr)
+	log.Printf("close %s connection to %s", dc.stateDesc(), dc.addr)
 
 	if dc.GetRule() == AutoTry {
 		if dc.lastError == nil {
 			switch {
 			case dc.inState(stateDirect):
-				log.Printf("Direct is ok for %s", dc.addr)
-				detector.DirectVisit(dc.host)
+				log.Printf("save direct for %s", dc.addr)
+				detector.DirectVisitSuccess(dc.host)
 
-			case dc.inState(stateDetour):
-				log.Printf("Detoured is ok for %s", dc.addr)
-				detector.BlockedVisit(dc.host)
-			}
-		} else {
-			switch {
-			case dc.inState(stateDirect):
-				log.Printf("Direct error for %s, detour next time", dc.addr)
-				detector.DontDirectVisit(dc.host)
-
-			case dc.inState(stateDetour):
-				log.Printf("Direct error for %s, direct next time", dc.addr)
-				detector.DontBlockedVisit(dc.host)
+			case dc.inState(stateProxy):
+				log.Printf("save proxy for %s", dc.addr)
+				detector.BlockedVisitSuccess(dc.host)
 			}
 		}
 	}

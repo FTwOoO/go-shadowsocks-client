@@ -23,8 +23,9 @@ type ClientConfig struct {
 }
 
 func StartClient(c *ClientConfig) context.CancelFunc {
-	detour.InitSiteStat("stat.json")
 	ctx, cancel := context.WithCancel(context.Background())
+
+	detour.InitSiteStat("stat.json", ctx)
 
 	transportDial := net.DialTimeout
 	dial := c.ApplicationProtoConfig.(*dialer.SSPrococolConfig).GenClientDialer(transportDial)

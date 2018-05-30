@@ -8,6 +8,7 @@ import (
 	"time"
 	"log"
 	"fmt"
+	"strings"
 )
 
 type SiteStat struct {
@@ -22,9 +23,11 @@ func NewSiteStat() *SiteStat {
 	}
 }
 
-func (ss *SiteStat) Get(s string) *VisitCnt {
+func (ss *SiteStat) Get(host string) *VisitCnt {
+	host = domainSuffix(host)
+
 	ss.vcntLock.RLock()
-	Vcnt, ok := ss.Vcnt[s]
+	Vcnt, ok := ss.Vcnt[host]
 	ss.vcntLock.RUnlock()
 	if ok {
 		return Vcnt
@@ -32,10 +35,12 @@ func (ss *SiteStat) Get(s string) *VisitCnt {
 	return nil
 }
 
-func (ss *SiteStat) create(s string) (vcnt *VisitCnt) {
+func (ss *SiteStat) create(host string) (vcnt *VisitCnt) {
+	host = domainSuffix(host)
+
 	vcnt = newVisitCnt(0, 0)
 	ss.vcntLock.Lock()
-	ss.Vcnt[s] = vcnt
+	ss.Vcnt[host] = vcnt
 	ss.vcntLock.Unlock()
 	return
 }
@@ -133,4 +138,14 @@ func isFileExists(path string) error {
 		return fmt.Errorf("%s is not regular file", path)
 	}
 	return nil
+}
+
+func domainSuffix(host string) string {
+
+	subs := strings.Split(host, ".")
+	if len(subs) > 2 {
+		subs = subs [len(subs)-2:]
+	}
+
+	return strings.Join(subs, ".")
 }

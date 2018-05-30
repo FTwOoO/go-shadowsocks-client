@@ -47,11 +47,6 @@ func (vc *VisitCnt) shouldNotSave() bool {
 	return (vc.Blocked == 0 && vc.Direct == 0)
 }
 
-//曾经被block过，用于判断将直连的Dial和Read timeout设置得更小
-func (vc *VisitCnt) OnceBlocked() bool {
-	return vc.Blocked > 0
-}
-
 //用于判断是否走代理
 func (vc *VisitCnt) AsBlocked() bool {
 	return (vc.Blocked - vc.Direct) >= blockedDelta
@@ -75,21 +70,5 @@ func (vc *VisitCnt) DirectVisit() {
 func (vc *VisitCnt) BlockedVisit() {
 	visitLock.Lock()
 	vc.Blocked += 1
-	visitLock.Unlock()
-}
-
-//记录不要直连的结果
-func (vc *VisitCnt) DontDirectVisit() {
-	visitLock.Lock()
-	vc.Direct = 0
-	vc.Blocked = 1
-	visitLock.Unlock()
-}
-
-//记录不要走代理的结果
-func (vc *VisitCnt) DontBlockedVisit() {
-	visitLock.Lock()
-	vc.Direct = 1
-	vc.Blocked = 0
 	visitLock.Unlock()
 }
