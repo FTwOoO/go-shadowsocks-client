@@ -1,4 +1,4 @@
-package dialer
+package connection
 
 import (
 	"net"
@@ -6,6 +6,7 @@ import (
 	"time"
 	"log"
 	"fmt"
+	"github.com/FTwOoO/go-ss/dialer"
 )
 
 type ShadowsocksRawConnParams struct {
@@ -13,7 +14,7 @@ type ShadowsocksRawConnParams struct {
 	IsServer bool
 }
 
-var _ ForwardConnection = &ShadowsocksRawConn{}
+var _ dialer.ForwardConnection = &ShadowsocksRawConn{}
 
 type ShadowsocksRawConn struct {
 	Conn                net.Conn

@@ -22,17 +22,20 @@ func InitSiteStat(sf string, ctx context.Context) {
 
 	err := siteStat.Load(sf)
 	if err != nil {
-		log.Printf("Load data file fail: %s, %v\n", err)
+		log.Printf("Load data file fail: %s, %v\n", sf, err)
 	}
 
 	go func() {
 		for {
 			select {
-			case <- time.After(5*time.Second):
+			case <- time.After(30*time.Second):
 				storeLock.Lock()
 				siteStat.Store(sf)
 				storeLock.Unlock()
 			case <- ctx.Done():
+				storeLock.Lock()
+				siteStat.Store(sf)
+				storeLock.Unlock()
 				return
 			}
 		}

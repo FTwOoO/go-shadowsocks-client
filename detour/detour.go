@@ -74,7 +74,7 @@ func GenDialer(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.Dia
 			return dc, nil
 		}
 
-		log.Printf("direct to %s failed[%s], try detour", addr, err)
+		log.Printf("direct to %s failed[%s]", addr, err)
 		if try_times >= 2 || rule == AlwaysDirect {
 			return
 		} else {
@@ -91,7 +91,7 @@ func GenDialer(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.Dia
 			return dc, nil
 		}
 
-		log.Printf("proxy to %s failed: %s", addr, err)
+		log.Printf("proxy to %s failed[%s]", addr, err)
 		if try_times >= 2 || rule == AlwaysProxy {
 			return
 		} else {

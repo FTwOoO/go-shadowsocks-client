@@ -7,7 +7,11 @@ import (
 )
 
 type DialFunc func(network, address string, timeout time.Duration) (net.Conn, error)
-type DialMiddleware func(d DialFunc) DialFunc
+
+type ConnectionSpec interface {
+	GenServerConn(conn net.Conn) net.Conn
+	GenClientDial(d DialFunc) DialFunc
+}
 
 type CommonConnection interface {
 	net.Conn
@@ -17,4 +21,18 @@ type CommonConnection interface {
 type ForwardConnection interface {
 	CommonConnection
 	ForwardReady() <- chan socks.Addr
+}
+
+func MakeConnection(baseConn net.Conn, connections []CommonConnection, args []interface{}) net.Conn {
+	parent := baseConn
+
+	for i, cc := range connections {
+		err := cc.Init(parent, args[i])
+		if err != nil {
+			panic(err)
+		}
+		parent = cc
+	}
+
+	return parent
 }

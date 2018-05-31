@@ -10,16 +10,16 @@ import (
 	"github.com/riobard/go-shadowsocks2/core"
 	"context"
 	"github.com/FTwOoO/proxycore/proxy_setup"
-	"github.com/FTwOoO/go-ss/dialer"
 	"github.com/FTwOoO/go-ss/serv"
 	"time"
 	"net"
 	"github.com/FTwOoO/go-ss/detour"
+	"github.com/FTwOoO/go-ss/dialer/protocol"
 )
 
 type ClientConfig struct {
-	ApplicationProtoConfig interface{}
-	Detour                 bool
+	*protocol.SSPrococol
+	Detour bool
 }
 
 func StartClient(c *ClientConfig) context.CancelFunc {
@@ -28,7 +28,7 @@ func StartClient(c *ClientConfig) context.CancelFunc {
 	detour.InitSiteStat("stat.json", ctx)
 
 	transportDial := net.DialTimeout
-	dial := c.ApplicationProtoConfig.(*dialer.SSPrococolConfig).GenClientDialer(transportDial)
+	dial := c.GenClientDial(transportDial)
 
 	if c.Detour == true {
 		dial = detour.GenDialer(dial, transportDial)
@@ -57,15 +57,15 @@ func main() {
 	flag.StringVar(&flags.Password, "password", "", "password")
 	flag.Parse()
 
-	shadowsocks := &dialer.SSPrococolConfig{
+	shadowsocks := &protocol.SSPrococol{
 		Cipher:     flags.Cipher,
 		Password:   flags.Password,
 		ServerAddr: flags.Server,
 	}
 
 	cancel := StartClient(&ClientConfig{
-		ApplicationProtoConfig: shadowsocks,
-		Detour: true,
+		SSPrococol: shadowsocks,
+		Detour:           true,
 	})
 
 	quit := make(chan os.Signal, 1)

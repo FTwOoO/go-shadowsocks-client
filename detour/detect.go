@@ -19,7 +19,7 @@ func (self *Detector) IsTimeout(err error) bool {
 
 func (self *Detector) TryDirect(host string) bool {
 
-	ip:=net.ParseIP(host)
+	ip := net.ParseIP(host)
 	if ip != nil {
 		return true
 	}
@@ -29,13 +29,22 @@ func (self *Detector) TryDirect(host string) bool {
 }
 
 func (self *Detector) DirectVisitSuccess(host string) {
+
+	ip := net.ParseIP(host)
+	if ip != nil {
+		return
+	}
+
 	vcnt := self.SiteStat.GetVisitCnt(host)
 	vcnt.DirectVisit()
 }
 
-
 func (self *Detector) BlockedVisitSuccess(host string) {
+	ip := net.ParseIP(host)
+	if ip != nil {
+		return
+	}
+
 	vcnt := self.SiteStat.GetVisitCnt(host)
 	vcnt.BlockedVisit()
 }
-

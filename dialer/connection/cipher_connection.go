@@ -1,4 +1,4 @@
-package dialer
+package connection
 
 import (
 	"net"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"github.com/riobard/go-shadowsocks2/core"
 	"fmt"
+	"github.com/FTwOoO/go-ss/dialer"
 )
 
 type CipherConnParams struct {
@@ -24,7 +25,7 @@ func (s CipherConnParams) GetCipherStream() (ciph func(net.Conn) net.Conn, err e
 	return
 }
 
-var _ CommonConnection = &CipherConn{}
+var _ dialer.CommonConnection = &CipherConn{}
 
 type CipherConn struct {
 	Conn     net.Conn

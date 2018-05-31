@@ -9,11 +9,10 @@ import (
 	"syscall"
 	"github.com/riobard/go-shadowsocks2/core"
 	"context"
-	"github.com/FTwOoO/go-ss/dialer"
 	"github.com/FTwOoO/go-ss/serv"
 	"time"
+	"github.com/FTwOoO/go-ss/dialer/protocol"
 )
-
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -30,10 +29,9 @@ func main() {
 	flag.StringVar(&flags.Password, "password", "", "password")
 	flag.Parse()
 
-
-	shadowsocks := &dialer.SSPrococolConfig{
-		Cipher: flags.Cipher,
-		Password:flags.Password,
+	shadowsocks := &protocol.SSPrococol{
+		Cipher:   flags.Cipher,
+		Password: flags.Password,
 	}
 
 	err := serv.TcpRemote(flags.Server, shadowsocks.GenServerConn, ctx)
@@ -51,4 +49,3 @@ func main() {
 	time.Sleep(3 * time.Second)
 	log.Printf("program exit")
 }
-
