@@ -10,15 +10,15 @@ import (
 
 )
 
-var _ dialer.ConnectionSpec = &SSPrococol{}
+var _ dialer.ConnectionSpec = &SSProxyPrococol{}
 
-type SSPrococol struct {
+type SSProxyPrococol struct {
 	Cipher     string
 	Password   string
 	ServerAddr string //client only
 }
 
-func (s *SSPrococol) GenServerConn(conn net.Conn) net.Conn {
+func (s *SSProxyPrococol) ServerWrapConn(conn net.Conn) net.Conn {
 
 	return dialer.MakeConnection(conn,
 		[]dialer.CommonConnection{
@@ -31,7 +31,7 @@ func (s *SSPrococol) GenServerConn(conn net.Conn) net.Conn {
 		})
 }
 
-func (s *SSPrococol) GenClientDial(parentDial dialer.DialFunc) dialer.DialFunc {
+func (s *SSProxyPrococol) ClientWrapDial(parentDial dialer.DialFunc) dialer.DialFunc {
 
 	return func(network, addr string, timeout time.Duration) (conn net.Conn, err error) {
 

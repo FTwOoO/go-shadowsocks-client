@@ -7,18 +7,19 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"github.com/riobard/go-shadowsocks2/core"
-	"context"
-	"github.com/FTwOoO/proxycore/proxy_setup"
-	"github.com/FTwOoO/go-ss/serv"
 	"time"
 	"net"
+	"context"
+	"github.com/riobard/go-shadowsocks2/core"
+	"github.com/FTwOoO/proxycore/proxy_setup"
+	"github.com/FTwOoO/go-ss/serv"
 	"github.com/FTwOoO/go-ss/detour"
 	"github.com/FTwOoO/go-ss/dialer/protocol"
+	"github.com/FTwOoO/kcp-go"
 )
 
 type ClientConfig struct {
-	*protocol.SSPrococol
+	*protocol.SSProxyPrococol
 	Detour bool
 }
 
@@ -27,11 +28,15 @@ func StartClient(c *ClientConfig) context.CancelFunc {
 
 	detour.InitSiteStat("stat.json", ctx)
 
-	transportDial := net.DialTimeout
-	dial := c.GenClientDial(transportDial)
+	var  dial = net.DialTimeout
 
 	if c.Detour == true {
-		dial = detour.GenDialer(dial, transportDial)
+		kcpDial := func (network, address string, timeout time.Duration) (net.Conn, error) {
+			return kcp.Dial(address)
+		}
+		proxyDial := c.SSProxyPrococol.ClientWrapDial(kcpDial)
+
+		dial = detour.GenDial(proxyDial, net.DialTimeout)
 	}
 
 	socksListenAddr, err := serv.SocksLocal(dial, ctx)
@@ -57,15 +62,15 @@ func main() {
 	flag.StringVar(&flags.Password, "password", "", "password")
 	flag.Parse()
 
-	shadowsocks := &protocol.SSPrococol{
+	shadowsocks := &protocol.SSProxyPrococol{
 		Cipher:     flags.Cipher,
 		Password:   flags.Password,
 		ServerAddr: flags.Server,
 	}
 
 	cancel := StartClient(&ClientConfig{
-		SSPrococol: shadowsocks,
-		Detour:           true,
+		SSProxyPrococol: shadowsocks,
+		Detour:          true,
 	})
 
 	quit := make(chan os.Signal, 1)

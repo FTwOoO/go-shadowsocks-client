@@ -31,3 +31,5 @@ release/
 *.tar.*
 .idea
 dist/
+*.json
+*.bak

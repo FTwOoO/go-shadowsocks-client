@@ -9,8 +9,8 @@ import (
 type DialFunc func(network, address string, timeout time.Duration) (net.Conn, error)
 
 type ConnectionSpec interface {
-	GenServerConn(conn net.Conn) net.Conn
-	GenClientDial(d DialFunc) DialFunc
+	ServerWrapConn(conn net.Conn) net.Conn
+	ClientWrapDial(d DialFunc) DialFunc
 }
 
 type CommonConnection interface {

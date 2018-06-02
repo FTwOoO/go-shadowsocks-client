@@ -50,7 +50,7 @@ var statesDesc = []string{
 	"proxy",
 }
 
-func GenDialer(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.DialFunc {
+func GenDial(proxyDial dialer.DialFunc, directDial dialer.DialFunc) dialer.DialFunc {
 	return func(network, addr string, timeout time.Duration) (conn net.Conn, err error) {
 		dc := &Conn{dialDetour: proxyDial, network: network, addr: addr}
 		dc.host, _, _ = net.SplitHostPort(dc.addr)

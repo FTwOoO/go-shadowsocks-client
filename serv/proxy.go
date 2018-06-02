@@ -6,7 +6,21 @@ import (
 	"context"
 	"github.com/FTwOoO/go-ss/dialer"
 	"time"
+	"github.com/FTwOoO/kcp-go"
 )
+
+func KcpRemote(addr string, trans func(conn net.Conn) net.Conn, ctx context.Context) (err error) {
+	l, err := kcp.Listen(addr)
+	if err != nil {
+		log.Printf("failed to listen on %s: %v", addr, err)
+		return
+	}
+
+	log.Printf("listening KCP on %s", addr)
+	go listenForConn(l, trans, ctx)
+
+	return
+}
 
 func TcpRemote(addr string, trans func(conn net.Conn) net.Conn, ctx context.Context) (err error) {
 	l, err := net.Listen("tcp", addr)
@@ -16,30 +30,34 @@ func TcpRemote(addr string, trans func(conn net.Conn) net.Conn, ctx context.Cont
 	}
 
 	log.Printf("listening TCP on %s", addr)
-
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				l.Close()
-				return
-			default:
-				c, err := l.Accept()
-				if err != nil {
-					log.Printf("failed to accept: %s", err)
-					continue
-				}
-				c.(*net.TCPConn).SetKeepAlive(true)
-				c = trans(c)
-
-				go forwardConnection(c)
-
-
-			}
-		}
-	}()
+	go listenForConn(l, trans, ctx)
 
 	return
+}
+
+func listenForConn(l net.Listener, trans func(conn net.Conn) net.Conn, ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			l.Close()
+			return
+		default:
+			c, err := l.Accept()
+			if err != nil {
+				log.Printf("failed to accept: %s", err)
+				continue
+			}
+			if c1, ok := c.(*net.TCPConn); ok {
+				c1.SetKeepAlive(true)
+			}
+
+			c = trans(c)
+
+			go forwardConnection(c)
+
+
+		}
+	}
 }
 
 func forwardConnection(c net.Conn) {
