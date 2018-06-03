@@ -4,12 +4,19 @@ import (
 	"net"
 	"time"
 	"github.com/riobard/go-shadowsocks2/socks"
+	"context"
 )
 
 type DialFunc func(network, address string, timeout time.Duration) (net.Conn, error)
 
-type ConnectionSpec interface {
-	ServerWrapConn(conn net.Conn) net.Conn
+type ProxyProtocol interface {
+	ServerListen(
+		addr string,
+		listenFunc func(net, laddr string) (net.Listener, error),
+		handler func(ForwardConnection),
+		ctx context.Context,
+	) (err error)
+
 	ClientWrapDial(d DialFunc) DialFunc
 }
 
@@ -23,7 +30,7 @@ type ForwardConnection interface {
 	ForwardReady() <- chan socks.Addr
 }
 
-func MakeConnection(baseConn net.Conn, connections []CommonConnection, args []interface{}) net.Conn {
+func MakeConnection(baseConn net.Conn, connections []CommonConnection, args []interface{}) CommonConnection {
 	parent := baseConn
 
 	for i, cc := range connections {

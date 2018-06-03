@@ -12,10 +12,8 @@ import (
 	"context"
 	"github.com/riobard/go-shadowsocks2/core"
 	"github.com/FTwOoO/proxycore/proxy_setup"
-	"github.com/FTwOoO/go-ss/serv"
 	"github.com/FTwOoO/go-ss/detour"
 	"github.com/FTwOoO/go-ss/dialer/protocol"
-	"github.com/FTwOoO/kcp-go"
 )
 
 type ClientConfig struct {
@@ -31,15 +29,14 @@ func StartClient(c *ClientConfig) context.CancelFunc {
 	var  dial = net.DialTimeout
 
 	if c.Detour == true {
-		kcpDial := func (network, address string, timeout time.Duration) (net.Conn, error) {
+/*		kcpDial := func (network, address string, timeout time.Duration) (net.Conn, error) {
 			return kcp.Dial(address)
-		}
-		proxyDial := c.SSProxyPrococol.ClientWrapDial(kcpDial)
-
+		}*/
+		proxyDial := c.SSProxyPrococol.ClientWrapDial(net.DialTimeout)
 		dial = detour.GenDial(proxyDial, net.DialTimeout)
 	}
 
-	socksListenAddr, err := serv.SocksLocal(dial, ctx)
+	socksListenAddr, err := protocol.SocksServer(dial, ctx)
 	if err != nil {
 		panic(err)
 	}

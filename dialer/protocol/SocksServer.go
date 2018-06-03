@@ -1,17 +1,17 @@
-package serv
+package protocol
+
 
 import (
 	"io"
 	"net"
 	"time"
-
 	"github.com/riobard/go-shadowsocks2/socks"
 	"log"
 	"github.com/FTwOoO/go-ss/dialer"
 	"context"
 )
 
-func SocksLocal(dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error) {
+func SocksServer(dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Printf("failed to listen: %v", err)

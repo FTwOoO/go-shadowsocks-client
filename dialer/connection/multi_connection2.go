@@ -3,10 +3,8 @@ package connection
 import (
 	"time"
 	"net"
-	"github.com/FTwOoO/kcp-go"
 	"errors"
 	"encoding/binary"
-	"fmt"
 	"sync/atomic"
 	"sync"
 	"log"
@@ -23,58 +21,38 @@ func init() {
 	}
 }
 
-func DialTimeout(network, address string, timeout time.Duration) (net.Conn, error) {
-
-	if network == "kcp" {
-		return kcp.Dial(address)
-	} else {
-		return net.DialTimeout(network, address, timeout)
-	}
-}
-
-func MutliConnDialTimeout(network, address string, timeout time.Duration) (cc net.Conn, err error) {
-	if network != "tcp" {
-		return nil, errors.New("Only support tcp")
-	}
-	conn1, err := DialTimeout("tcp", address, timeout)
-	if err != nil {
-		return
-	}
-
-	conn2, err := DialTimeout("kcp", address, timeout)
-	if err != nil {
-		conn1.Close()
-		return
-	}
-
-	cc1 := &MultiConn{}
-	err = cc1.Init(nil, MultiConnParams{Connections: []net.Conn{conn1, conn2}})
-	if err != nil {
-		conn1.Close()
-		conn2.Close()
-		return
-	}
-
-	cc = cc1
-
-	return
-}
-
 type InnerConnection struct {
 	net.Conn
-	ConnId  uint32
+	connId  int
 	isRead  bool
 	isWrite bool
 }
 
-func (cc *InnerConnection) Read(b []byte) (n int, err error) {
+func NewInnerConnection(conn net.Conn, id int) *InnerConnection {
+	return &InnerConnection{Conn: conn, connId: id}
+}
+
+func (cc *InnerConnection) Id() (int) {
+	return cc.connId
+}
+
+func (cc *InnerConnection) ReadHeader() (err error) {
 	if !cc.isRead {
-		err = binary.Read(cc.Conn, binary.BigEndian, cc.ConnId)
+		err = binary.Read(cc.Conn, binary.BigEndian, cc.connId)
 		if err != nil {
 			return
 		}
 
 		cc.isRead = true
+	}
+}
+
+func (cc *InnerConnection) Read(b []byte) (n int, err error) {
+	if !cc.isRead {
+		err = cc.ReadHeader()
+		if err != nil {
+			return
+		}
 	}
 
 	return cc.Conn.Read(b)
@@ -82,7 +60,7 @@ func (cc *InnerConnection) Read(b []byte) (n int, err error) {
 
 func (cc *InnerConnection) Write(b []byte) (n int, err error) {
 	if !cc.isWrite {
-		err = binary.Write(cc.Conn, binary.BigEndian, cc.ConnId)
+		err = binary.Write(cc.Conn, binary.BigEndian, cc.connId)
 		if err != nil {
 			return
 		}
@@ -162,17 +140,13 @@ func (bs *DataBuffer) Read(b []byte) (n int, err error) {
 	}
 }
 
-type MultiConnectionArgs struct {
-	ConnId uint32
-}
-
 type MultiConnection struct {
 	Connections     map[int]connectionChannel
 	connectionsLock sync.Mutex
 
 	readItemsCh chan ByteItem
 
-	ConnId         uint32
+	ConnId         int
 	DataReadOffset uint32
 }
 
@@ -185,23 +159,29 @@ type connectionChannel struct {
 	WriteBuffer *DataBuffer
 }
 
-func (cc *MultiConnection) Init(args interface{}) error {
-	if v, ok := args.(MultiConnectionArgs); ok {
-		cc.ConnId = v.ConnId
-		return nil
-	}
+func NewMultiConnectionById(connId int) (cc *MultiConnection) {
+	cc = &MultiConnection{}
+	cc.ConnId = connId
 	cc.readItemsCh = make(chan ByteItem, BufferItemsPerStream)
 	cc.Connections = make(map[int]connectionChannel)
-	return fmt.Errorf("arg error:%s", args)
+	return
 }
 
 func (cc *MultiConnection) Add(conn net.Conn) {
 	cc.connectionsLock.Lock()
 	defer cc.connectionsLock.Unlock()
 
-	wrapConn := &InnerConnection{
-		Conn:   conn,
-		ConnId: cc.ConnId,
+	var innerConn *InnerConnection
+	innerConn, ok := conn.(*InnerConnection)
+	if !ok {
+		innerConn = NewInnerConnection(
+			conn,
+			cc.ConnId,
+		)
+	} else {
+		if innerConn.Id() != cc.ConnId {
+			log.Fatal("Id(%d) != ConnId(%d)", innerConn.Id(), cc.ConnId)
+		}
 	}
 
 	readBuffer := NewBufferRead(0)
@@ -209,7 +189,7 @@ func (cc *MultiConnection) Add(conn net.Conn) {
 
 	connChannel := connectionChannel{
 		Id:          time.Now().Nanosecond(),
-		Conn:        wrapConn,
+		Conn:        innerConn,
 		ReadBuffer:  readBuffer,
 		WriteBuffer: writeBuffer,
 	}
@@ -217,6 +197,7 @@ func (cc *MultiConnection) Add(conn net.Conn) {
 	connChannel.Context, connChannel.CancelFunc = context.WithCancel(context.Background())
 
 	cc.Connections[connChannel.Id] = connChannel
+
 	go cc.readLoop(connChannel)
 	go cc.writeLoop(connChannel)
 
@@ -237,6 +218,9 @@ func (bs *MultiConnection) readLoop(connChannel connectionChannel) {
 
 		select {
 		case <-connChannel.Done():
+			bs.connectionsLock.Lock()
+			delete(bs.Connections, connChannel.Id)
+			bs.connectionsLock.Unlock()
 			return
 		case <-r.ReadReady:
 			item := pool.Get().(ByteItem)[:ByteItemLen]
@@ -280,6 +264,9 @@ func (bs *MultiConnection) writeLoop(connChannel connectionChannel) {
 
 	select {
 	case <-connChannel.Done():
+		bs.connectionsLock.Lock()
+		delete(bs.Connections, connChannel.Id)
+		bs.connectionsLock.Unlock()
 		return
 	}
 
@@ -295,11 +282,11 @@ func (cc *MultiConnection) Write(b []byte) (n int, err error) {
 		data = data[nCopy:]
 
 		//TODO: deal with write timeout
-		for id, xx := range cc.Connections {
+		for _, xx := range cc.Connections {
 			_, err = xx.WriteBuffer.Write(item)
 			if err != nil {
 				xx.CancelFunc()
-				delete(cc.Connections, id)
+
 				if len(cc.Connections) > 0 {
 					err = nil
 					continue
@@ -323,43 +310,24 @@ func (cc *MultiConnection) Close() error {
 }
 
 func (cc *MultiConnection) LocalAddr() net.Addr {
-	return cc.Connections[0].LocalAddr()
+	return cc.Connections[0].Conn.LocalAddr()
 }
 
 func (cc *MultiConnection) RemoteAddr() net.Addr {
-	return cc.Connections[0].RemoteAddr()
+	return cc.Connections[0].Conn.RemoteAddr()
 }
 
 func (cc *MultiConnection) SetDeadline(t time.Time) error {
-
-	for _, cc := range cc.Connections {
-		err := cc.SetDeadline(t)
-		if err != nil {
-			log.Println(err)
-		}
-	}
 
 	return nil
 }
 
 func (cc *MultiConnection) SetReadDeadline(t time.Time) error {
-	for _, cc := range cc.Connections {
-		err := cc.SetReadDeadline(t)
-		if err != nil {
-			log.Println(err)
-		}
-	}
 
 	return nil
 }
 
 func (cc *MultiConnection) SetWriteDeadline(t time.Time) error {
-	for _, cc := range cc.Connections {
-		err := cc.SetWriteDeadline(t)
-		if err != nil {
-			log.Println(err)
-		}
-	}
 
 	return nil
 }
