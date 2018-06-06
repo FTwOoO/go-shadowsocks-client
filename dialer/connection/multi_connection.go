@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"io"
 	"context"
+	"fmt"
 )
 
 var pool = &sync.Pool{}
@@ -45,6 +46,8 @@ func (cc *InnerConnection) ReadHeader() (err error) {
 
 		cc.isRead = true
 	}
+
+	return nil
 }
 
 func (cc *InnerConnection) Read(b []byte) (n int, err error) {
@@ -80,7 +83,7 @@ var _ io.ReadWriter = &DataBuffer{}
 
 type DataBuffer struct {
 	net.Conn
-	readItemsCh    chan ByteItem
+	readItemsCh    chan []byte
 	ReadReady      chan struct{}
 	dataReadOffset uint32
 	readBuffer     *bytes.Buffer
@@ -88,7 +91,7 @@ type DataBuffer struct {
 
 func NewBufferRead(DataReadOffset uint32) *DataBuffer {
 	bs := new(DataBuffer)
-	bs.readItemsCh = make(chan ByteItem, BufferItemsPerStream)
+	bs.readItemsCh = make(chan []byte, BufferItemsPerStream)
 	bs.ReadReady = make(chan struct{}, 10)
 	bs.readBuffer = &bytes.Buffer{}
 	bs.dataReadOffset = DataReadOffset
@@ -102,7 +105,7 @@ func (bs *DataBuffer) GetDataReadOffset() (n uint32) {
 func (bs *DataBuffer) Write(b []byte) (n int, err error) {
 
 	for len(b) > 0 {
-		item := pool.Get().(ByteItem)[:ByteItemLen]
+		item := pool.Get().([]byte)[:ByteItemLen]
 		nCopy := copy(item, b)
 		item = item[:nCopy]
 		n += nCopy
@@ -144,7 +147,7 @@ type MultiConnection struct {
 	Connections     map[int]connectionChannel
 	connectionsLock sync.Mutex
 
-	readItemsCh chan ByteItem
+	readItemsCh chan []byte
 
 	ConnId         int
 	DataReadOffset uint32
@@ -162,7 +165,7 @@ type connectionChannel struct {
 func NewMultiConnectionById(connId int) (cc *MultiConnection) {
 	cc = &MultiConnection{}
 	cc.ConnId = connId
-	cc.readItemsCh = make(chan ByteItem, BufferItemsPerStream)
+	cc.readItemsCh = make(chan []byte, BufferItemsPerStream)
 	cc.Connections = make(map[int]connectionChannel)
 	return
 }
@@ -223,7 +226,7 @@ func (bs *MultiConnection) readLoop(connChannel connectionChannel) {
 			bs.connectionsLock.Unlock()
 			return
 		case <-r.ReadReady:
-			item := pool.Get().(ByteItem)[:ByteItemLen]
+			item := pool.Get().([]byte)[:ByteItemLen]
 			readOffset := r.GetDataReadOffset()
 
 			n, err := r.Read(item)
@@ -273,9 +276,10 @@ func (bs *MultiConnection) writeLoop(connChannel connectionChannel) {
 }
 
 func (cc *MultiConnection) Write(b []byte) (n int, err error) {
-	data := b
+	var data []byte = b
 	for len(data) > 0 {
-		item := pool.Get().(ByteItem)[:ByteItemLen]
+		fmt.Print(pool.Get())
+		item := pool.Get().([]byte)[:ByteItemLen]
 		nCopy := copy(item, data)
 		n += nCopy
 		item = item[:nCopy]

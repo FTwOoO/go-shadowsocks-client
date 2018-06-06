@@ -7,7 +7,7 @@ import (
 	"sync"
 	"log"
 	"context"
-	"github.com/getlantern/errors"
+	"errors"
 )
 
 func DialTimeout(network, address string, timeout time.Duration) (net.Conn, error) {
@@ -98,7 +98,7 @@ func (mc *MultiConnectionManager) Listen(network, address string) (l net.Listene
 		return
 	}
 
-	l2, err := net.Listen("kcp", address)
+	l2, err := kcp.Listen(address)
 	if err != nil {
 		log.Printf("failed to listen: %v", err)
 		return
@@ -117,7 +117,7 @@ func (mc *MultiConnectionManager) Listen(network, address string) (l net.Listene
 					c, err := l.Accept()
 					if err != nil {
 						log.Printf("failed to accept: %s", err)
-						continue
+						return
 					}
 					if c1, ok := c.(*net.TCPConn); ok {
 						c1.SetKeepAlive(true)

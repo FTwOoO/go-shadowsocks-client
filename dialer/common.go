@@ -30,7 +30,7 @@ type ForwardConnection interface {
 	ForwardReady() <- chan socks.Addr
 }
 
-func MakeConnection(baseConn net.Conn, connections []CommonConnection, args []interface{}) CommonConnection {
+func MakeConnection(baseConn net.Conn, connections []CommonConnection, args []interface{}) net.Conn {
 	parent := baseConn
 
 	for i, cc := range connections {
