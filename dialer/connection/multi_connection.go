@@ -3,12 +3,9 @@ package connection
 import (
 	"time"
 	"net"
-	"errors"
 	"encoding/binary"
-	"sync/atomic"
 	"sync"
 	"log"
-	"bytes"
 	"io"
 	"context"
 	"fmt"
@@ -74,83 +71,20 @@ func (cc *InnerConnection) Write(b []byte) (n int, err error) {
 	return cc.Conn.Write(b)
 }
 
-const BufferItemsPerStream = 10
+const BufferItemsPerStream = 1
 const ByteItemLen = 1024
 
 type ByteItem []byte
 
-var _ io.ReadWriter = &DataBuffer{}
 
-type DataBuffer struct {
-	net.Conn
-	readItemsCh    chan []byte
-	ReadReady      chan struct{}
-	dataReadOffset uint32
-	readBuffer     *bytes.Buffer
-}
-
-func NewBufferRead(DataReadOffset uint32) *DataBuffer {
-	bs := new(DataBuffer)
-	bs.readItemsCh = make(chan []byte, BufferItemsPerStream)
-	bs.ReadReady = make(chan struct{}, 10)
-	bs.readBuffer = &bytes.Buffer{}
-	bs.dataReadOffset = DataReadOffset
-	return bs
-}
-
-func (bs *DataBuffer) GetDataReadOffset() (n uint32) {
-	return bs.dataReadOffset
-}
-
-func (bs *DataBuffer) Write(b []byte) (n int, err error) {
-
-	for len(b) > 0 {
-		item := pool.Get().([]byte)[:ByteItemLen]
-		nCopy := copy(item, b)
-		item = item[:nCopy]
-		n += nCopy
-		//TODO: set write timeout
-		bs.readItemsCh <- b
-	}
-	return
-}
-
-func (bs *DataBuffer) Read(b []byte) (n int, err error) {
-	for {
-		if bs.readBuffer.Len() > 0 {
-			n, err = bs.readBuffer.Read(b)
-			bs.dataReadOffset += uint32(n)
-			return
-		}
-
-		bs.readBuffer.Truncate(0)
-
-		item, ok := <-bs.readItemsCh
-		if !ok {
-			err = errors.New("readItemsCh closed")
-			return
-		}
-
-		defer pool.Put(item)
-
-		n = copy(b, item)
-		if len(item) > n {
-			bs.readBuffer.Write(item[n:])
-		}
-
-		bs.dataReadOffset += uint32(n)
-		return
-	}
-}
 
 type MultiConnection struct {
 	Connections     map[int]connectionChannel
 	connectionsLock sync.Mutex
 
 	readItemsCh chan []byte
-
 	ConnId         int
-	DataReadOffset uint32
+	DataReadOffset int
 }
 
 type connectionChannel struct {
@@ -187,8 +121,8 @@ func (cc *MultiConnection) Add(conn net.Conn) {
 		}
 	}
 
-	readBuffer := NewBufferRead(0)
-	writeBuffer := NewBufferRead(0)
+	readBuffer := NewBufferRead(ByteItemLen, 0)
+	writeBuffer := NewBufferRead(ByteItemLen, 0)
 
 	connChannel := connectionChannel{
 		Id:          time.Now().Nanosecond(),
@@ -225,7 +159,7 @@ func (bs *MultiConnection) readLoop(connChannel connectionChannel) {
 			delete(bs.Connections, connChannel.Id)
 			bs.connectionsLock.Unlock()
 			return
-		case <-r.ReadReady:
+		default:
 			item := pool.Get().([]byte)[:ByteItemLen]
 			readOffset := r.GetDataReadOffset()
 
@@ -235,9 +169,9 @@ func (bs *MultiConnection) readLoop(connChannel connectionChannel) {
 				return
 			}
 
-			if bs.DataReadOffset >= readOffset && bs.DataReadOffset < (readOffset+uint32(n)) {
+			if bs.DataReadOffset >= readOffset && bs.DataReadOffset < (readOffset+ n) {
 				item = item[bs.DataReadOffset-readOffset : n]
-				atomic.AddUint32(&bs.DataReadOffset, uint32(len(item)))
+				bs.DataReadOffset += len(item)
 				bs.readItemsCh <- item
 			}
 		}

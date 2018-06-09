@@ -61,6 +61,11 @@ func (mc *MultiConnectionManager) DialTimeout(network, address string, timeout t
 		ch <- conn2
 	}()
 
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
  	id := time.Now().Nanosecond()
 	conn  := NewMultiConnectionById(id)
 	if err != nil {
@@ -70,11 +75,6 @@ func (mc *MultiConnectionManager) DialTimeout(network, address string, timeout t
 	mc.connsLock.Lock()
 	mc.conns[id] = conn
 	mc.connsLock.Unlock()
-
-	go func() {
-		wg.Wait()
-		close(ch)
-	}()
 
 	cc1 := <- ch
 	conn.Add(cc1)
