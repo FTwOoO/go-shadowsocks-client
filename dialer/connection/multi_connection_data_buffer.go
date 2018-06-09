@@ -7,14 +7,16 @@ import (
 	"errors"
 )
 
-var _ io.ReadWriter = &DataBuffer{}
+var _ io.ReadWriteCloser = &DataBuffer{}
 
 type DataBuffer struct {
 	net.Conn
 	readItemsCh    chan []byte
 	dataReadOffset int
+	writeDataOffset int
 	readBuffer     *bytes.Buffer
 	bufferItemLen  int
+	closed chan int
 }
 
 func NewBufferRead(bufferItemLen int, DataReadOffset int) *DataBuffer {
@@ -26,11 +28,16 @@ func NewBufferRead(bufferItemLen int, DataReadOffset int) *DataBuffer {
 	bs.readBuffer = &bytes.Buffer{}
 	bs.dataReadOffset = DataReadOffset
 	bs.bufferItemLen = bufferItemLen
+	bs.closed = make(chan int)
 	return bs
 }
 
 func (bs *DataBuffer) GetDataReadOffset() (n int) {
 	return bs.dataReadOffset
+}
+
+func (bs *DataBuffer) GetWriteOffset() (n int) {
+	return bs.writeDataOffset
 }
 
 func (bs *DataBuffer) Write(b []byte) (n int, err error) {
@@ -39,11 +46,22 @@ func (bs *DataBuffer) Write(b []byte) (n int, err error) {
 		item = item[0:bs.bufferItemLen]
 		nCopy := copy(item, b)
 		item = item[:nCopy]
-		n += nCopy
 		//TODO: set write timeout
-		bs.readItemsCh <- item
-		b = b[nCopy:]
+
+		select {
+		case <-bs.closed:
+			err = errors.New("buffer closed")
+			break
+		case bs.readItemsCh <- item:
+			b = b[nCopy:]
+			n += nCopy
+		}
 	}
+
+	if err != nil && n > 0 {
+		bs.writeDataOffset += n
+	}
+
 	return
 }
 
@@ -63,6 +81,9 @@ func (bs *DataBuffer) Read(b []byte) (n int, err error) {
 			bs.readBuffer.Truncate(0)
 
 			select {
+			case <-bs.closed:
+				err = errors.New("buffer closed")
+				return
 			case item, ok := <-bs.readItemsCh:
 				if !ok {
 					err = errors.New("readItemsCh closed")
@@ -87,3 +108,10 @@ func (bs *DataBuffer) Read(b []byte) (n int, err error) {
 
 	return
 }
+
+func (bs *DataBuffer) Close() error {
+	close(bs.closed)
+	return nil
+}
+
+
