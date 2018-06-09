@@ -11,12 +11,12 @@ var _ io.ReadWriteCloser = &DataBuffer{}
 
 type DataBuffer struct {
 	net.Conn
-	readItemsCh    chan []byte
-	dataReadOffset int
+	readItemsCh     chan []byte
+	readDataOffset  int
 	writeDataOffset int
-	readBuffer     *bytes.Buffer
-	bufferItemLen  int
-	closed chan int
+	readBuffer      *bytes.Buffer
+	bufferItemLen   int
+	closed          chan int
 }
 
 func NewBufferRead(bufferItemLen int, DataReadOffset int) *DataBuffer {
@@ -26,14 +26,14 @@ func NewBufferRead(bufferItemLen int, DataReadOffset int) *DataBuffer {
 	BufferItemsPerStream := (maxBytes / bufferItemLen)
 	bs.readItemsCh = make(chan []byte, BufferItemsPerStream)
 	bs.readBuffer = &bytes.Buffer{}
-	bs.dataReadOffset = DataReadOffset
+	bs.readDataOffset = DataReadOffset
 	bs.bufferItemLen = bufferItemLen
 	bs.closed = make(chan int)
 	return bs
 }
 
-func (bs *DataBuffer) GetDataReadOffset() (n int) {
-	return bs.dataReadOffset
+func (bs *DataBuffer) GetReadOffset() (n int) {
+	return bs.readDataOffset
 }
 
 func (bs *DataBuffer) GetWriteOffset() (n int) {
@@ -75,7 +75,7 @@ func (bs *DataBuffer) Read(b []byte) (n int, err error) {
 				return
 			}
 			b = b[nRead:]
-			bs.dataReadOffset += nRead
+			bs.readDataOffset += nRead
 			n += nRead
 		} else {
 			bs.readBuffer.Truncate(0)
@@ -92,7 +92,7 @@ func (bs *DataBuffer) Read(b []byte) (n int, err error) {
 
 				nCopy := copy(b, item)
 				b = b[nCopy:]
-				bs.dataReadOffset += nCopy
+				bs.readDataOffset += nCopy
 				n += nCopy
 
 				if len(item) > nCopy {

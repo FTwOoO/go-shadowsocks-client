@@ -88,7 +88,7 @@ func (bs *MultiConnection) readLoop(ReadBuffer *DataBuffer, conn net.Conn) {
 
 	for {
 		item := pool.Get().([]byte)[:ByteItemLen]
-		readOffset := r.GetDataReadOffset()
+		readOffset := r.GetReadOffset()
 
 		n, err := r.Read(item)
 		if err != nil {
