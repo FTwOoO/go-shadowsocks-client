@@ -3,47 +3,44 @@ package main
 import (
 	"testing"
 	"github.com/FTwOoO/go-ss/dialer"
-	"github.com/FTwOoO/go-ss/serv"
 	"context"
 	"net"
 	"golang.org/x/net/proxy"
 	"net/http"
 	"io/ioutil"
 	"strings"
+	"github.com/FTwOoO/go-ss/dialer/protocol"
 )
 
 func TestServerAndClient(t *testing.T) {
 
-	serverListenAddr := "127.0.0.1:15689"
+	serverListenAddr := "127.0.0.1:16923"
 	ssCipher := "AES-128-CFB"
 	ssPswd := "12345678"
 
-	//start server proxy
-	shadowsocks := &dialer.SSPrococolConfig{
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var shadowsocks dialer.ProxyProtocol = &protocol.SSProxyPrococol{
 		Cipher:     ssCipher,
 		Password:   ssPswd,
 		ServerAddr: serverListenAddr,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := serv.TcpRemote(serverListenAddr, shadowsocks.GenServerConn, ctx)
+	err := shadowsocks.ServerListen(serverListenAddr, net.Listen, nil, ctx)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
+	
 
-	//start socks client
-	//always detour
-	dial := shadowsocks.GenClientDialer(net.DialTimeout)
-	socksListenAddr, err := serv.SocksLocal(dial, ctx)
+	dial := shadowsocks.ClientWrapDial(net.DialTimeout)
+	socksListenAddr, err := protocol.SocksServer(dial, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	dd, err := proxy.SOCKS5("tcp", socksListenAddr, nil, proxy.Direct)
 	if err != nil {
-		t.Fatalf( "can't connect to the proxy:", err)
+		t.Fatalf("can't connect to the proxy:", err)
 	}
 
 	testURL := "http://example.com"
