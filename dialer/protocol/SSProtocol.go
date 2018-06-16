@@ -8,6 +8,8 @@ import (
 	"github.com/FTwOoO/go-ss/dialer/connection"
 	"github.com/FTwOoO/go-ss/dialer"
 	"context"
+
+	"github.com/FTwOoO/go-ss/stat"
 )
 
 var _ dialer.ProxyProtocol = &SSProxyPrococol{}
@@ -60,6 +62,8 @@ func (s *SSProxyPrococol) ServerListen(
 				if c1, ok := c.(*net.TCPConn); ok {
 					c1.SetKeepAlive(true)
 				}
+
+				stat.RequestCounter.WithLabelValues(c.RemoteAddr().String()).Inc()
 
 				c2 := s.serverWrapConn(c)
 				if handler == nil {

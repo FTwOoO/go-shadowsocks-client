@@ -30,7 +30,7 @@ func TestServerAndClient(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	
+
 
 	dial := shadowsocks.ClientWrapDial(net.DialTimeout)
 	socksListenAddr, err := protocol.SocksServer(dial, ctx)

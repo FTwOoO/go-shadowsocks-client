@@ -13,20 +13,23 @@ import (
 	"github.com/FTwOoO/go-ss/dialer/protocol"
 	"github.com/FTwOoO/go-ss/dialer"
 	"net"
-	"github.com/xtaci/kcp-go"
+	"github.com/FTwOoO/go-ss/stat"
 )
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	var flags struct {
-		Server   string
-		Cipher   string
-		Password string
-		Socks    string
+		Server     string
+		MetrixAddr string
+		Cipher     string
+		Password   string
+		Socks      string
 	}
 
 	flag.StringVar(&flags.Server, "server", "", "server add to listen")
+	flag.StringVar(&flags.MetrixAddr, "metrix", "", "server add to listen")
+
 	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
 	flag.StringVar(&flags.Password, "password", "", "password")
 	flag.Parse()
@@ -36,19 +39,24 @@ func main() {
 		Password: flags.Password,
 	}
 
-
 	err := shadowsocks.ServerListen(flags.Server, net.Listen, nil, ctx)
 	if err != nil {
 		panic(err)
 	}
 
+	/*
+
 	kcpListen :=  func(net, laddr string) (net.Listener, error) {
 		return kcp.Listen(laddr)
-	}
+	}*/
 
-	err = shadowsocks.ServerListen(flags.Server, kcpListen, nil, ctx)
+	err = shadowsocks.ServerListen(flags.Server, net.Listen, nil, ctx)
 	if err != nil {
 		panic(err)
+	}
+
+	if flags.MetrixAddr != "" {
+		stat.Listen(flags.MetrixAddr, ctx)
 	}
 
 	quit := make(chan os.Signal, 1)
