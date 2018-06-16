@@ -14,6 +14,8 @@ import (
 	"github.com/FTwOoO/proxycore/proxy_setup"
 	"github.com/FTwOoO/go-ss/detour"
 	"github.com/FTwOoO/go-ss/dialer/protocol"
+	_ "net/http/pprof"
+	"net/http"
 )
 
 type ClientConfig struct {
@@ -26,12 +28,12 @@ func StartClient(c *ClientConfig) context.CancelFunc {
 
 	detour.InitSiteStat("stat.json", ctx)
 
-	var  dial = net.DialTimeout
+	var dial = net.DialTimeout
 
 	if c.Detour == true {
-/*		kcpDial := func (network, address string, timeout time.Duration) (net.Conn, error) {
-			return kcp.Dial(address)
-		}*/
+		/*		kcpDial := func (network, address string, timeout time.Duration) (net.Conn, error) {
+					return kcp.Dial(address)
+				}*/
 		proxyDial := c.SSProxyPrococol.ClientWrapDial(net.DialTimeout)
 		dial = detour.GenDial(proxyDial, net.DialTimeout)
 	}
@@ -69,6 +71,10 @@ func main() {
 		SSProxyPrococol: shadowsocks,
 		Detour:          true,
 	})
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGIO, syscall.SIGABRT)
