@@ -29,13 +29,13 @@ func StartClient(c *ClientConfig) context.CancelFunc {
 	detour.InitSiteStat("stat.json", ctx)
 
 	var dial = net.DialTimeout
+	dial = c.SSProxyPrococol.ClientWrapDial(net.DialTimeout)
 
 	if c.Detour == true {
 		/*		kcpDial := func (network, address string, timeout time.Duration) (net.Conn, error) {
 					return kcp.Dial(address)
 				}*/
-		proxyDial := c.SSProxyPrococol.ClientWrapDial(net.DialTimeout)
-		dial = detour.GenDial(proxyDial, net.DialTimeout)
+		dial = detour.GenDial(dial, net.DialTimeout)
 	}
 
 	socksListenAddr, err := protocol.SocksServer(dial, ctx)
@@ -51,11 +51,13 @@ func main() {
 	//systray.Run(onReady, onExit)
 
 	var flags struct {
+		Detour bool
 		Server   string
 		Cipher   string
 		Password string
 	}
 
+	flag.BoolVar(&flags.Detour, "detour", false, "client connect address or url")
 	flag.StringVar(&flags.Server, "server", "", "client connect address or url")
 	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
 	flag.StringVar(&flags.Password, "password", "", "password")
@@ -67,9 +69,11 @@ func main() {
 		ServerAddr: flags.Server,
 	}
 
+	//fmt.Printf("detour flag: %v", flags.Detour)
+	//os.Exit(1)
 	cancel := StartClient(&ClientConfig{
 		SSProxyPrococol: shadowsocks,
-		Detour:          true,
+		Detour:          flags.Detour,
 	})
 
 	go func() {
