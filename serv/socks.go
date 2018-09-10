@@ -11,8 +11,8 @@ import (
 	"context"
 )
 
-func SocksLocal(dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+func SocksLocal(addr string, dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error) {
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Printf("failed to listen: %v", err)
 		return

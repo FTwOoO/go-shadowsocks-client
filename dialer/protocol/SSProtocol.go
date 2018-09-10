@@ -7,7 +7,6 @@ import (
 	"time"
 	"github.com/FTwOoO/go-ss/dialer/connection"
 	"github.com/FTwOoO/go-ss/dialer"
-
 )
 
 var _ dialer.ConnectionSpec = &SSProxyPrococol{}
@@ -15,6 +14,7 @@ var _ dialer.ConnectionSpec = &SSProxyPrococol{}
 type SSProxyPrococol struct {
 	Cipher     string
 	Password   string
+	ListenAddr string
 	ServerAddr string //client only
 }
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"testing"
-	"github.com/FTwOoO/go-ss/dialer"
+	"github.com/FTwOoO/go-ss/dialer/connection"
 	"github.com/FTwOoO/go-ss/serv"
 	"context"
 	"net"
@@ -19,7 +19,7 @@ func TestServerAndClient(t *testing.T) {
 	ssPswd := "12345678"
 
 	//start server proxy
-	shadowsocks := &dialer.SSPrococolConfig{
+	shadowsocks := &connection.SSPrococolConfig{
 		Cipher:     ssCipher,
 		Password:   ssPswd,
 		ServerAddr: serverListenAddr,
@@ -36,14 +36,14 @@ func TestServerAndClient(t *testing.T) {
 	//start socks client
 	//always detour
 	dial := shadowsocks.GenClientDialer(net.DialTimeout)
-	socksListenAddr, err := serv.SocksLocal(dial, ctx)
+	socksListenAddr, err := serv.SocksLocal("0.0.0.0:0", dial, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	dd, err := proxy.SOCKS5("tcp", socksListenAddr, nil, proxy.Direct)
 	if err != nil {
-		t.Fatalf( "can't connect to the proxy:", err)
+		t.Fatalf("can't connect to the proxy:", err)
 	}
 
 	testURL := "http://example.com"

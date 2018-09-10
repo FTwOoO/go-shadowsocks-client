@@ -11,7 +11,7 @@ import (
 	"bytes"
 	"io"
 	"github.com/FTwOoO/kcp-go"
-	"github.com/getlantern/errors"
+	"errors"
 )
 
 func DialTimeout(network, address string, timeout time.Duration) (net.Conn, error) {
