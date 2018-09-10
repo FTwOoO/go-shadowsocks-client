@@ -2,41 +2,38 @@ package main
 
 import (
 	"testing"
-	"github.com/FTwOoO/go-ss/dialer/connection"
-	"github.com/FTwOoO/go-ss/serv"
+	"github.com/FTwOoO/go-ss/dialer"
 	"context"
 	"net"
 	"golang.org/x/net/proxy"
 	"net/http"
 	"io/ioutil"
 	"strings"
+	"github.com/FTwOoO/go-ss/dialer/protocol"
 )
 
 func TestServerAndClient(t *testing.T) {
 
-	serverListenAddr := "127.0.0.1:15689"
+	serverListenAddr := "127.0.0.1:16923"
 	ssCipher := "AES-128-CFB"
 	ssPswd := "12345678"
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	//start server proxy
-	shadowsocks := &connection.SSPrococolConfig{
+
+	var shadowsocks dialer.ProxyProtocol = &protocol.SSProxyPrococol{
 		Cipher:     ssCipher,
 		Password:   ssPswd,
 		ServerAddr: serverListenAddr,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := serv.TcpRemote(serverListenAddr, shadowsocks.GenServerConn, ctx)
+	err := shadowsocks.ServerListen(serverListenAddr, net.Listen, nil, ctx)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 
-	//start socks client
-	//always detour
-	dial := shadowsocks.GenClientDialer(net.DialTimeout)
-	socksListenAddr, err := serv.SocksLocal("0.0.0.0:0", dial, ctx)
+	dial := shadowsocks.ClientWrapDial(net.DialTimeout)
+	socksListenAddr, err := protocol.SocksServer("0.0.0.0:0", dial, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

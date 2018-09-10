@@ -10,9 +10,9 @@ import (
 	"context"
 	"time"
 	"github.com/riobard/go-shadowsocks2/core"
-	"github.com/FTwOoO/go-ss/serv"
 	"github.com/FTwOoO/go-ss/dialer/protocol"
 	"github.com/FTwOoO/go-ss/dialer"
+	"net"
 )
 
 func main() {
@@ -30,18 +30,23 @@ func main() {
 	flag.StringVar(&flags.Password, "password", "", "password")
 	flag.Parse()
 
-	var shadowsocks dialer.ConnectionSpec = &protocol.SSProxyPrococol{
+	var shadowsocks dialer.ProxyProtocol = &protocol.SSProxyPrococol{
 		Cipher:   flags.Cipher,
 		Password: flags.Password,
 	}
 
-	err := serv.TcpRemote(flags.Server, shadowsocks.ServerWrapConn, ctx)
+	err := shadowsocks.ServerListen(flags.Server, net.Listen, nil, ctx)
 	if err != nil {
 		panic(err)
 	}
 
+	/*
 
-	err = serv.KcpRemote(flags.Server, shadowsocks.ServerWrapConn, ctx)
+	kcpListen :=  func(net, laddr string) (net.Listener, error) {
+		return kcp.Listen(laddr)
+	}*/
+
+	err = shadowsocks.ServerListen(flags.Server, net.Listen, nil, ctx)
 	if err != nil {
 		panic(err)
 	}

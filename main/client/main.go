@@ -11,8 +11,9 @@ import (
 	"net"
 	"context"
 	"github.com/riobard/go-shadowsocks2/core"
-	"github.com/FTwOoO/go-ss/serv"
 	"github.com/FTwOoO/go-ss/dialer/protocol"
+	_ "net/http/pprof"
+	"net/http"
 	"github.com/FTwOoO/kcp-go"
 )
 
@@ -42,7 +43,8 @@ func StartClient(c *ClientConfig) context.CancelFunc {
 		//proxyDial = detour.GenDial(proxyDial, net.DialTimeout)
 	}
 
-	_, err := serv.SocksLocal(c.ListenAddr, proxyDial, ctx)
+	_, err := protocol.SocksServer(c.ListenAddr, proxyDial, ctx)
+
 	if err != nil {
 		panic(err)
 	}
@@ -55,12 +57,14 @@ func main() {
 	//systray.Run(onReady, onExit)
 
 	var flags struct {
+		ListenAddr string
+		Detour     bool
 		Server     string
 		Cipher     string
-		ListenAddr string
 		Password   string
 	}
 
+	flag.BoolVar(&flags.Detour, "detour", false, "client connect address or url")
 	flag.StringVar(&flags.Server, "server", "", "client connect address or url")
 	flag.StringVar(&flags.ListenAddr, "listen", "", "client connect address or url")
 	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
@@ -74,10 +78,16 @@ func main() {
 		ListenAddr: flags.ListenAddr,
 	}
 
+	//fmt.Printf("detour flag: %v", flags.Detour)
+	//os.Exit(1)
 	cancel := StartClient(&ClientConfig{
 		SSProxyPrococol: shadowsocks,
-		Detour:          true,
+		Detour:          flags.Detour,
 	})
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGIO, syscall.SIGABRT)
