@@ -34,5 +34,5 @@ steps:
         dep ensure
     fi
     go build -v .
-  workingDirectory: '$(modulePath)'
+  workingDirectory: '$(modulePath)/main/server'
   displayName: 'Get dependencies, then build'
