@@ -1,18 +1,18 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"github.com/FTwOoO/go-ss/core"
+	"github.com/FTwOoO/go-ss/dialer"
+	"github.com/FTwOoO/go-ss/dialer/protocol"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-	"context"
 	"time"
-	"github.com/riobard/go-shadowsocks2/core"
-	"github.com/FTwOoO/go-ss/dialer/protocol"
-	"github.com/FTwOoO/go-ss/dialer"
-	"net"
 )
 
 func main() {
@@ -42,9 +42,9 @@ func main() {
 
 	/*
 
-	kcpListen :=  func(net, laddr string) (net.Listener, error) {
-		return kcp.Listen(laddr)
-	}*/
+		kcpListen :=  func(net, laddr string) (net.Listener, error) {
+			return kcp.Listen(laddr)
+		}*/
 
 	err = shadowsocks.ServerListen(flags.Server, net.Listen, nil, ctx)
 	if err != nil {

@@ -1,10 +1,10 @@
 package dialer
 
 import (
+	"context"
+	"github.com/FTwOoO/go-ss/socks"
 	"net"
 	"time"
-	"github.com/riobard/go-shadowsocks2/socks"
-	"context"
 )
 
 type DialFunc func(network, address string, timeout time.Duration) (net.Conn, error)
@@ -27,7 +27,7 @@ type CommonConnection interface {
 
 type ForwardConnection interface {
 	CommonConnection
-	ForwardReady() <- chan socks.Addr
+	ForwardReady() <-chan socks.Addr
 }
 
 func MakeConnection(baseConn net.Conn, connections []CommonConnection, args []interface{}) net.Conn {

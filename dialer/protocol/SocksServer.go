@@ -1,13 +1,13 @@
 package protocol
 
 import (
+	"context"
+	"github.com/FTwOoO/go-ss/dialer"
+	"github.com/FTwOoO/go-ss/socks"
 	"io"
+	"log"
 	"net"
 	"time"
-	"github.com/riobard/go-shadowsocks2/socks"
-	"log"
-	"github.com/FTwOoO/go-ss/dialer"
-	"context"
 )
 
 func SocksServer(addr string, dial dialer.DialFunc, ctx context.Context) (listenAddr string, err error) {

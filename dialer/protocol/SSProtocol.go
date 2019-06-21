@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"net"
-	"log"
-	"github.com/riobard/go-shadowsocks2/socks"
-	"time"
-	"github.com/FTwOoO/go-ss/dialer/connection"
 	"github.com/FTwOoO/go-ss/dialer"
+	"github.com/FTwOoO/go-ss/dialer/connection"
+	"github.com/FTwOoO/go-ss/socks"
+	"log"
+	"net"
+	"time"
 
 	"context"
 )

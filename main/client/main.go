@@ -1,20 +1,20 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"github.com/FTwOoO/go-ss/core"
+	"github.com/FTwOoO/go-ss/dialer/protocol"
+	"github.com/FTwOoO/kcp-go"
 	"log"
+	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
-	"net"
-	"context"
-	"github.com/riobard/go-shadowsocks2/core"
-	"github.com/FTwOoO/go-ss/dialer/protocol"
-	_ "net/http/pprof"
-	"net/http"
-	"github.com/FTwOoO/kcp-go"
 )
 
 type ClientConfig struct {

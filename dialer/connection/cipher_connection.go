@@ -1,12 +1,12 @@
 package connection
 
 import (
+	"fmt"
+	"github.com/FTwOoO/go-ss/core"
+	"github.com/FTwOoO/go-ss/dialer"
+	"log"
 	"net"
 	"time"
-	"log"
-	"github.com/riobard/go-shadowsocks2/core"
-	"fmt"
-	"github.com/FTwOoO/go-ss/dialer"
 )
 
 type CipherConnParams struct {

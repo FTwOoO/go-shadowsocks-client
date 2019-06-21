@@ -1,10 +1,10 @@
 package connection
 
 import (
+	"github.com/FTwOoO/go-ss/socks"
 	"net"
 	"reflect"
 	"testing"
-	"github.com/riobard/go-shadowsocks2/socks"
 )
 
 func TestShadowsocksRawConn_Read(t *testing.T) {

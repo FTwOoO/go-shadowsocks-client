@@ -1,12 +1,12 @@
 package connection
 
 import (
-	"net"
-	"github.com/riobard/go-shadowsocks2/socks"
-	"time"
-	"log"
 	"fmt"
 	"github.com/FTwOoO/go-ss/dialer"
+	"github.com/FTwOoO/go-ss/socks"
+	"log"
+	"net"
+	"time"
 )
 
 type ShadowsocksRawConnParams struct {
@@ -26,7 +26,7 @@ type ShadowsocksRawConn struct {
 
 func (cc *ShadowsocksRawConn) Init(parent net.Conn, args interface{}) error {
 	if v, ok := args.(ShadowsocksRawConnParams); ok {
-		cc.params  = v
+		cc.params = v
 		cc.Conn = parent
 
 		if cc.params.IsServer {
