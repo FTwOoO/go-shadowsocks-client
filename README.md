@@ -14,16 +14,13 @@ or [download](https://github.com/FTwOoO/go-shadowsocks-client/files/1799215/gsc.
 ## Run
 Server:
 ```
-gsc --cipher "AES-128-CFB" --password <password> --server  "<proxy_server_ip>:<port>" --listen "0.0.0.0:1080"
+gsc --cipher "AES-128-CFB" --password <password> --server  "0.0.0.0:<port>" 
 ```
 
 Client:
+
 ```
-gsc --cipher "AES-128-CFB" --password <password> --server <server>:<port>
+gsc --cipher "AES-128-CFB" --password <password> --server <proxy_server_ip>:<port> --listen "127.0.0.1:1080"
 ```
 
-(more ciphers are avalible, see [go-shadowsocks2](https://github.com/riobard/go-shadowsocks2))
-
-## TODO 
-- systray
-- Auto set the system socks proxy, auto identify blocked sites
+use with Chrome PLUGIN SwitchyOmega（AUTO PROXY MODE） 
